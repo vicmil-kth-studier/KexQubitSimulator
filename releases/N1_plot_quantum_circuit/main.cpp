@@ -1,5 +1,5 @@
 #define USE_DEBUG
-#define DEBUG_KEYWORDS "!vicmil_lib,init(),main(),handle_cube_cube_collision" 
+#define DEBUG_KEYWORDS "!vicmil_lib,/source,main(),init()" 
 #include "../../source/quantum_computer_include.h"
 
 using namespace vicmil;

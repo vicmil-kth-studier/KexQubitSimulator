@@ -6,6 +6,20 @@
 namespace vicmil {
 const double PI  = 3.141592653589793238463;
 
+/**
+ * Determine if a value is in range
+ * Returns true if min_v <= v <= max_v
+*/
+inline bool in_range(int v, int min_v, int max_v) {
+    if(v < min_v) {
+        return false;
+    }
+    if(v > max_v) {
+        return false;
+    }
+    return true;
+}
+
 inline bool is_power_of_two(unsigned int x) {
     return !(x == 0) && !(x & (x - 1));
 }
