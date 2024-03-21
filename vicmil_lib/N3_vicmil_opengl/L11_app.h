@@ -210,7 +210,7 @@ namespace vicmil {
 
         class TextConsole {
         public:
-            std::vector<std::string> text_buffer;
+            std::vector<std::string> text_buffer = std::vector<std::string>();
             int total_line_count = 0;
             double min_x = -1;
             double min_y = -1;
@@ -220,7 +220,7 @@ namespace vicmil {
             double letter_width = 0.01;
         
             TextConsole() {
-                text_buffer.resize(100);
+                text_buffer.resize(50);
             }
 
             int get_buffer_index(int line_num) {

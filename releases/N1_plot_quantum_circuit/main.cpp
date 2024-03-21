@@ -6,6 +6,7 @@ using namespace vicmil;
 
 FPSCounter fps_counter;
 vicmil::app::TextConsole text_console;
+qubit_circuit::QuantumCircuitInterface quantum_circuit_interface;
 
 const int FPS = 30;
 int update_count = 0;
@@ -28,6 +29,9 @@ void render() {
     vicmil::app::draw2d_text(info_str, -1.0, 1.0, 0.02);
 
     text_console.draw();
+
+    quantum_circuit_interface.update();
+    quantum_circuit_interface.draw();
 }
 
 // Runs at a fixed framerate
@@ -57,6 +61,15 @@ void init() {
 
     text_console.log(qubit_system.state_vector_to_str());
     text_console.log(qubit_system.state_vector_to_str_complex());
+
+    quantum_circuit_interface.circuit_console.min_x = 0;
+    quantum_circuit_interface.circuit_console.max_x = 1;
+
+    /*quantum_circuit_interface.output_console.min_x = 0;
+    quantum_circuit_interface.output_console.max_x = 1;
+    quantum_circuit_interface.output_console.max_y = 1;
+    quantum_circuit_interface.output_console.min_y = 0;*/
+
 }
 
 

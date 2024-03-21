@@ -2021,6 +2021,16 @@ namespace text_letter {
     "...00"
     "....."
     ".....";
+    const std::string underscore = 
+    "....."
+    "....."
+    "....."
+    "....."
+    "....."
+    "....."
+    "00000"
+    "....."
+    ".....";
     const std::string question_mark = 
     ".00.."
     "0..0."
@@ -2056,6 +2066,7 @@ namespace text_letter {
     minus +
     plus +
     percent +
+    underscore +
     question_mark +
     filled;
 
@@ -2115,6 +2126,10 @@ namespace text_letter {
         }
         acc++;
         if(c_ == '%') {
+            return acc;
+        }
+        acc++;
+        if(c_ == '_') {
             return acc;
         }
         acc++;
