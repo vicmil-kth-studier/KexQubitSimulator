@@ -1,8 +1,8 @@
-# Welcome to my cube project!
+# Welcome to my quantum computing project!
 
 
 You can find my dev blog here
-https://vicmil-kth-studier.github.io/Modsim24_CubeCollision3D/
+https://vicmil-kth-studier.github.io/KexQubitSimulator/
 
 
 ## What is the structure of the project?
@@ -10,7 +10,7 @@ https://vicmil-kth-studier.github.io/Modsim24_CubeCollision3D/
 Contains some small projects with precompiled code that can run in the web. See the dev blog for more info
 
 ### Source
-Contains the meat of the project. i.e. the physics simulation part
+Contains the meat of the project. i.e. the qubit simulation part
 
 ### Vicmil_lib
 A library that I have developed to help with graphics, testing and debugging. The project is built on top of OpenGL and SDL.
