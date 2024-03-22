@@ -26,12 +26,25 @@ void render() {
     info_str += "   x: " + std::to_string(vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width));
     info_str += "   y: " + std::to_string(vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height));
 
-    vicmil::app::draw2d_text(info_str, -1.0, 1.0, 0.02);
+    vicmil::app::draw2d_text(info_str, 0.0, 1.0, 0.02);
 
     //text_console.draw();
 
     quantum_circuit_interface.update();
     quantum_circuit_interface.draw();
+
+    vicmil::app::TextConsole info_console;
+    info_console.max_y = 1;
+    info_console.min_y = 0.7;
+    info_console.min_x = -1;
+    info_console.max_x = 1;
+    info_console.log("The meaning of the gate symbols:");
+    info_console.log("..: Empty position");
+    info_console.log("H_: Hadamar");
+    info_console.log("T_: Phase shift");
+    info_console.log("CC: Control bit of CNOT");
+    info_console.log("CT: Target bit of CNOT");
+    info_console.draw();
 }
 
 // Runs at a fixed framerate
@@ -63,9 +76,16 @@ void init() {
     text_console.log(qubit_system.state_vector_to_str_complex());*/
 
     quantum_circuit_interface.output_window.console.letter_width = 0.01;
+    quantum_circuit_interface.output_window.console.min_y = -1;
     quantum_circuit_interface.output_window.console.max_y = 0.7;
-    quantum_circuit_interface.circuit_window.console.min_x = 0;
-    quantum_circuit_interface.circuit_window.console.max_x = 1;
+    quantum_circuit_interface.output_window.console.min_x = -0.2;
+    quantum_circuit_interface.output_window.console.max_x = 1;
+
+
+    quantum_circuit_interface.circuit_window.console.min_y = -1;
+    quantum_circuit_interface.circuit_window.console.max_y = 0.7;
+    quantum_circuit_interface.circuit_window.console.min_x = -1;
+    quantum_circuit_interface.circuit_window.console.max_x = 0;
 
     /*quantum_circuit_interface.output_console.min_x = 0;
     quantum_circuit_interface.output_console.max_x = 1;

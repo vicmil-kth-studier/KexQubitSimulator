@@ -7,6 +7,8 @@ const int hadamar_gate_index = 1;
 const int phase_shift_gate_index = 2;
 const int cnot_gate_index = 3;
 
+const int MAX_QUBIT_COUNT = 10;
+
 /**
  * Stores what operation a qubit is trying to apply
 */
@@ -229,15 +231,28 @@ class QuantumCircuitInterface {
     TextWindow output_window = TextWindow();
     std::string info_str;
 
+    // Keep track of which lines corresponds to what
+    int qubit_settings_start = 0;
+    int qubit_plus_minus_start = 0;
+    int qubit_settings_selection_start = 0;
+
     QuantumCircuitInterface() {
         run_system();
     }
     std::string to_string() {
+        std::string output_str = "";
+        int line_num = 0;
+        output_str += "Quantum circuit:";
+        output_str += "\n";
+        line_num++;
+        output_str += "\n";
+        line_num++;
+
+        qubit_settings_start = line_num;
         int qubit_count = std::max(circuit.get_qubit_count(), min_qubit_count);
         // qubit_count = min_qubit_count;
         min_qubit_count = qubit_count;
         int circuit_length = circuit.get_operations_count();
-        std::string output_str = "";
         for(int j = 0; j < qubit_count; j++) {
             output_str += "q" + std::to_string(j) + ":   ";
             for(int i = 0; i < circuit_length+1; i++) {
@@ -246,10 +261,37 @@ class QuantumCircuitInterface {
                 output_str += gate_settings[qubit_setting].op_str; // TODO: fix
                 output_str += "__";
             }
+            line_num += 1;
             output_str += "\n";
+            line_num += 1;
             output_str += "\n";
         }
-        output_str += "+  -\n";
+        output_str += "\n";
+        line_num++;
+        output_str += "\n";
+        line_num++;
+        output_str += "Press on the gates in circuit to change them, ex ..";
+        output_str += "\n";
+        line_num++;
+        output_str += "You can also change the gates already set!";
+        output_str += "\n";
+        line_num++;
+        output_str += "Currently selected: " + gate_settings[selected_qubit_setting].op_str;
+        output_str += "\n";
+        line_num++;
+        output_str += "\n";
+        line_num++;
+        output_str += "\n";
+        line_num++;
+        output_str += "\n";
+        line_num++;
+        output_str += "Press on the gate you want to use";
+        output_str += "\n";
+        line_num++;
+        output_str += "\n";
+        line_num++;
+
+        qubit_settings_selection_start = line_num;
 
         // Add the settings at the end
         for(int i = 0; i < gate_settings.size(); i++) {
@@ -259,39 +301,52 @@ class QuantumCircuitInterface {
             output_str += gate_settings[i].op_str;
         }
         output_str += "\n";
+        line_num += 1;
+        output_str += "\n";
+        line_num += 1;
+        output_str += "\n";
+        line_num += 1;
 
-        // Show the current setting
-        output_str += "[" + gate_settings[selected_qubit_setting].op_str + "]";
+        output_str += "Press on + and - to change qubit count";
+        output_str += "\n";
+        line_num++;
+
+        qubit_plus_minus_start = line_num;
+        output_str += " +   - \n";
+        line_num += 1;
 
         return output_str;
     }
     void check_qubit_setting_pressed(int char_x, int char_y) {
         int max_x = (circuit.get_operations_count() + 1) * 6 + 6;
-        int max_y = min_qubit_count*2-1;
-        if(!vicmil::in_range(char_y, 0, max_y)) {return;}
+        int max_y = min_qubit_count*2-1 + qubit_settings_start;
+        if(!vicmil::in_range(char_y, qubit_settings_start, max_y)) {return;}
         if(!vicmil::in_range(char_x, 6, max_x)) {return;}
 
         int operation_num = (char_x - 6) / 6;
-        int qubit_num = char_y / 2;
+        int qubit_num = (char_y - qubit_settings_start) / 2;
         DebugExpr(operation_num);
         DebugExpr(qubit_num);
         circuit.set_qubit_setting(qubit_num, operation_num, selected_qubit_setting);
     }
     void check_plus_pressed(int char_x, int char_y) {
-        if(!vicmil::in_range(char_y, min_qubit_count*2, min_qubit_count*2)) {return;}
-        if(!vicmil::in_range(char_x, 0, 0)) {return;}
+        if(char_y != qubit_plus_minus_start) {return;}
+        if(!vicmil::in_range(char_x, 0, 2)) {return;}
         min_qubit_count += 1;
+        if(min_qubit_count > MAX_QUBIT_COUNT) { // Cap number of qubits
+            min_qubit_count = MAX_QUBIT_COUNT;
+        }
     }
     void check_minus_pressed(int char_x, int char_y) {
-        if(!vicmil::in_range(char_y, min_qubit_count*2, min_qubit_count*2)) {return;}
-        if(!vicmil::in_range(char_x, 3, 3)) {return;}
+        if(char_y != qubit_plus_minus_start) {return;}
+        if(!vicmil::in_range(char_x, 4, 6)) {return;}
         min_qubit_count -= 1;
         if(min_qubit_count < 1) {
             min_qubit_count = 1;
         }
     }
     void check_setting_selection_pressed(int char_x, int char_y) {
-        if(!vicmil::in_range(char_y, min_qubit_count*2+1, min_qubit_count*2+1)) {return;}
+        if(char_y != qubit_settings_selection_start) {return;}
         if(!vicmil::in_range(char_x, 0, gate_settings.size()*4)) {return;}
         
         selected_qubit_setting = char_x / 4;
@@ -299,8 +354,20 @@ class QuantumCircuitInterface {
     void run_system() {
         output_window.console.clear();
 
+        if(min_qubit_count > MAX_QUBIT_COUNT) {
+            min_qubit_count = MAX_QUBIT_COUNT;
+        }
+
         // Rerun quantum system
         system_solution = QubitSystem(min_qubit_count);
+        system_solution._rand_gen.set_seed(vicmil::Timer().start_ms); // Set random seed(can be improved!)
+        system_solution._rand_gen.rand();
+        system_solution._rand_gen.rand();
+        system_solution._rand_gen.rand();
+        system_solution._rand_gen.rand();
+        system_solution._rand_gen.rand();
+        system_solution._rand_gen.rand();
+
         for(int i = 0; i < circuit.get_operations_count(); i++) {
             int result = circuit.run_operation(system_solution, i);
             if(result != 0) {
@@ -310,15 +377,29 @@ class QuantumCircuitInterface {
             }
         }
 
-        output_window.console.log("Program successfully ran!");
+        output_window.console.log("Program successfully ran!\n");
+        output_window.console.log("State vector:");
         output_window.console.log(system_solution.state_vector_to_str());
+
+        output_window.console.log("\n Run instance id: " + std::to_string(vicmil::Timer().start_ms)); // As a way to see it is updating
+        // Perform the measurement
+        output_window.console.log("\n Measurement:");
+        std::string measurement_str = "";
+        for(int i = 0; i < min_qubit_count; i++) {
+            if(i != 0) {
+                measurement_str += ",  ";
+            }
+            bool measurement = system_solution.measure(i);
+            measurement_str += "q"  + std::to_string(i) + ": " + std::to_string((int)measurement);
+        }
+        output_window.console.log(measurement_str);
     }
     void update(vicmil::MouseState mouse_state = vicmil::MouseState()) {
         circuit_window.update(mouse_state);
         if(circuit_window._mouse_left_clicked() && circuit_window.mouse_inside_window()) {
             int char_x; int char_y;
             circuit_window.get_mouse_char_pos(&char_x, &char_y);
-            info_str = "x: " + std::to_string(char_x) + "    y: " + std::to_string(char_y);
+            info_str = "\nchar pressed. x: " + std::to_string(char_x) + "    y: " + std::to_string(char_y);
 
             check_qubit_setting_pressed(char_x, char_y);
             check_plus_pressed(char_x, char_y);
@@ -333,9 +414,12 @@ class QuantumCircuitInterface {
         circuit_window.console.clear();
         circuit_window.console.log(to_string());
         circuit_window.console.log(info_str);
+        circuit_window.console.log("\n Press like here to do a new measurement!");
         circuit_window.console.draw();
 
         output_window.console.draw();
+
+
 
         // TODO: draw quantum system solution
         //output_console.clear();

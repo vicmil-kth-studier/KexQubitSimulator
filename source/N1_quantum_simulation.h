@@ -76,8 +76,8 @@ class QubitSystem {
         double r = _rand_gen.rand_between_0_and_1(); // Pick where in the probability distr we can find our value
 
         double sum = 0;
-        bool qubit_val;
-        for (int n=0; n<8; n++) {
+        bool qubit_val = false;
+        for (int n=0; n<_qubit_states.size(); n++) {
             sum += _qubit_states[n].get_prob(); // cumulative probability
             if (sum >= r) {
                 // We have found our value
@@ -85,10 +85,9 @@ class QubitSystem {
                 break;
             }
         }
-            
 
         // Now we must collapse our vector to that value
-        for (int n=0; n<8; n++) {
+        for (int n=0; n<_qubit_states.size(); n++) {
             // See if the value is the measured value
             if (qubit_val != is_qubit_enabled_in_state(n, qubit_num)) {
                 _qubit_states[n] = QubitsState::from_prob_and_phase(0, 0); // Collapse the other values to 0
