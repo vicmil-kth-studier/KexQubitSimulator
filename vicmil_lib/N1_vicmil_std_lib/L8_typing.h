@@ -20,9 +20,14 @@ namespace vicmil {
     }
     template<class T>
     int64_t type_to_int(T* _) {
-        std::type_index typ = _get_type_index<T>();
-        std::size_t code = typ.hash_code();
-        return (int64_t)code;
+        return type_to_int<T>();
+    }
+    template<class T>
+    T* null_if_type_missmatch(T* v, int64_t type_int) {
+        if(type_to_int<T>() == type_int) {
+            return v;
+        }
+        return nullptr;
     }
 
     /**
@@ -47,22 +52,14 @@ namespace vicmil {
 
     class AnyTypeString: public AnyType {
         public:
+        void* _get_this(int64_t type_int) override { return null_if_type_missmatch(this, type_int); }
+
         std::string str;
-        void* _get_this(int64_t class_type_int) override {
-            if(type_to_int(this) == class_type_int) {
-                return this;
-            }
-            return nullptr; // Wrong type! call get_this in parent class if it exists
-        }
     };
     class AnyTypeInt: public AnyType {
         public:
+        void* _get_this(int64_t type_int) override { return null_if_type_missmatch(this, type_int); }
+        
         int int_;
-        void* _get_this(int64_t class_type_int) override {
-            if(type_to_int(this) == class_type_int) {
-                return this;
-            }
-            return nullptr; // Wrong type! call get_this in parent class if it exists
-        }
     };
 }
