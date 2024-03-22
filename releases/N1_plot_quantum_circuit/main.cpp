@@ -78,7 +78,7 @@ void init() {
     quantum_circuit_interface.output_window.console.letter_width = 0.01;
     quantum_circuit_interface.output_window.console.min_y = -1;
     quantum_circuit_interface.output_window.console.max_y = 0.7;
-    quantum_circuit_interface.output_window.console.min_x = -0.2;
+    quantum_circuit_interface.output_window.console.min_x = 0;
     quantum_circuit_interface.output_window.console.max_x = 1;
 
 

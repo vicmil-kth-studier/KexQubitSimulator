@@ -383,11 +383,14 @@ class QuantumCircuitInterface {
 
         output_window.console.log("\n Run instance id: " + std::to_string(vicmil::Timer().start_ms)); // As a way to see it is updating
         // Perform the measurement
-        output_window.console.log("\n Measurement:");
+        output_window.console.log("\nMeasurement:");
         std::string measurement_str = "";
         for(int i = 0; i < min_qubit_count; i++) {
             if(i != 0) {
                 measurement_str += ",  ";
+            }
+            if(i != 0 && i%5 == 0) {
+                measurement_str += "\n";
             }
             bool measurement = system_solution.measure(i);
             measurement_str += "q"  + std::to_string(i) + ": " + std::to_string((int)measurement);
