@@ -5,7 +5,7 @@
 using namespace vicmil;
 
 FPSCounter fps_counter;
-vicmil::app::TextConsole text_console;
+//vicmil::app::TextConsole text_console;
 qubit_circuit::QuantumCircuitInterface quantum_circuit_interface;
 
 const int FPS = 30;
@@ -28,7 +28,7 @@ void render() {
 
     vicmil::app::draw2d_text(info_str, -1.0, 1.0, 0.02);
 
-    text_console.draw();
+    //text_console.draw();
 
     quantum_circuit_interface.update();
     quantum_circuit_interface.draw();
@@ -47,11 +47,11 @@ void init() {
     vicmil::app::set_game_updates_per_second(FPS);
     fps_counter = FPSCounter();
 
-    text_console.log("init");
+    //text_console.log("init");
 
 
     // lets create a quantum system and do some calculations
-    QubitSystem qubit_system = QubitSystem(3);
+    /*QubitSystem qubit_system = QubitSystem(3);
     qubit_system.hadamar(1);
     qubit_system.phase_shift_pi_over_4(1);
     qubit_system.phase_shift_pi_over_4(1);
@@ -60,10 +60,12 @@ void init() {
     qubit_system.hadamar(1);
 
     text_console.log(qubit_system.state_vector_to_str());
-    text_console.log(qubit_system.state_vector_to_str_complex());
+    text_console.log(qubit_system.state_vector_to_str_complex());*/
 
-    quantum_circuit_interface.circuit_console.min_x = 0;
-    quantum_circuit_interface.circuit_console.max_x = 1;
+    quantum_circuit_interface.output_window.console.letter_width = 0.01;
+    quantum_circuit_interface.output_window.console.max_y = 0.7;
+    quantum_circuit_interface.circuit_window.console.min_x = 0;
+    quantum_circuit_interface.circuit_window.console.max_x = 1;
 
     /*quantum_circuit_interface.output_console.min_x = 0;
     quantum_circuit_interface.output_console.max_x = 1;
