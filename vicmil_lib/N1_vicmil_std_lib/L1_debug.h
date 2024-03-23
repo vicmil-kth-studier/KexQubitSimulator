@@ -120,6 +120,14 @@ namespace vicmil {
 #define Assert(x)
 #endif 
 
+
+#ifdef USE_DEBUG
+#define AssertEq(v1, v2, deviance) Assert(abs(v1 - v2) < deviance)
+#else
+#define Assert(x)
+#endif 
+
+
 #define ThrowError(x) std::cout << GetFileName << ": ln" << __LINE__ << ": " << x << std::endl; throw
 #define ThrowNotImplemented() std::cout << GetFileName << ": ln" << __LINE__ << ": " << "Not implemented yet!" << std::endl; throw
 

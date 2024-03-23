@@ -360,13 +360,6 @@ class QuantumCircuitInterface {
 
         // Rerun quantum system
         system_solution = QubitSystem(min_qubit_count);
-        system_solution._rand_gen.set_seed(vicmil::Timer().start_ms); // Set random seed(can be improved!)
-        system_solution._rand_gen.rand();
-        system_solution._rand_gen.rand();
-        system_solution._rand_gen.rand();
-        system_solution._rand_gen.rand();
-        system_solution._rand_gen.rand();
-        system_solution._rand_gen.rand();
 
         for(int i = 0; i < circuit.get_operations_count(); i++) {
             int result = circuit.run_operation(system_solution, i);
@@ -381,7 +374,7 @@ class QuantumCircuitInterface {
         output_window.console.log("State vector:");
         output_window.console.log(system_solution.state_vector_to_str());
 
-        output_window.console.log("\n Run instance id: " + std::to_string(vicmil::Timer().start_ms)); // As a way to see it is updating
+        output_window.console.log("\n Run instance id: " + std::to_string((int)vicmil::get_time_since_epoch_ms())); // As a way to see it is updating
         // Perform the measurement
         output_window.console.log("\nMeasurement:");
         std::string measurement_str = "";

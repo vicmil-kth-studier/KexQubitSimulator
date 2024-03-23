@@ -143,31 +143,28 @@ void complex_to_exp_form(std::complex<double> v, double* r, double* phi) {
     return;
 }
 
-TestWrapper(TEST_complex_to_exp_form,
-    void test() {
-        double phi = 0;
-        double r = 0.5;
-        double inc = vicmil::PI / 4;
-        while(phi < 2 * vicmil::PI) {
-            DebugExpr(phi);
-            std::complex<double> v = exp_form_to_complex(r, phi);
-            double r_new;
-            double phi_new;
-            complex_to_exp_form(v, &r_new, &phi_new);
-            DebugExpr(phi_new);
-            DebugExpr(r_new);
-            assert(abs(phi_new - phi) < 0.0001);
-            assert(abs(r_new - r) < 0.0001);
-            phi += inc;
-        }
-
+void TEST_complex_to_exp_form() {
+    double phi = 0;
+    double r = 0.5;
+    double inc = vicmil::PI / 4;
+    while(phi < 2 * vicmil::PI) {
+        DebugExpr(phi);
+        std::complex<double> v = exp_form_to_complex(r, phi);
         double r_new;
         double phi_new;
-        complex_to_exp_form(0, &r_new, &phi_new);
-        assert(abs(phi_new - 0) < 0.0001);
-        assert(abs(r_new - 0) < 0.0001);
+        complex_to_exp_form(v, &r_new, &phi_new);
+        DebugExpr(phi_new);
+        DebugExpr(r_new);
+        assert(abs(phi_new - phi) < 0.0001);
+        assert(abs(r_new - r) < 0.0001);
+        phi += inc;
     }
-);
 
-
+    double r_new;
+    double phi_new;
+    complex_to_exp_form(0, &r_new, &phi_new);
+    assert(abs(phi_new - 0) < 0.0001);
+    assert(abs(r_new - 0) < 0.0001);
+}
+AddTest(TEST_complex_to_exp_form);
 }

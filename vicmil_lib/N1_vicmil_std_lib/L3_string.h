@@ -29,13 +29,12 @@ inline std::string string_replace(const std::string& str, const std::string& str
         DebugExpr(remaining_string);
     }
 }
-TestWrapper(TEST_string_replace,
-    void test() {
-        assert(string_replace("abca", "a", "d") == "dbcd");
-        assert(string_replace("abcab", "ab", "d") == "dcd");
-        assert(string_replace("aaaaa", "aa", "a") == "aaa");
-    }
-);
+void TEST_string_replace() {
+    assert(string_replace("abca", "a", "d") == "dbcd");
+    assert(string_replace("abcab", "ab", "d") == "dcd");
+    assert(string_replace("aaaaa", "aa", "a") == "aaa");
+}
+AddTest(TEST_string_replace);
 
 inline std::string vec_to_string(const std::vector<double>& vec) {
     std::string out_str;

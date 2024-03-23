@@ -1,5 +1,5 @@
 #define USE_DEBUG
-#define DEBUG_KEYWORDS ".,!vicmil_std_lib" 
+#define DEBUG_KEYWORDS "." 
 #include "../vicmil_emscripten.h"
 
 int main() {

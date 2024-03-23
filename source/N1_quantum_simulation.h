@@ -53,13 +53,14 @@ class QubitSystem {
     public:
     int _qubit_count;
     std::vector<QubitsState> _qubit_states = std::vector<QubitsState>();
-    vicmil::RandomNumberGenerator _rand_gen = vicmil::RandomNumberGenerator();
+    vicmil::RandomNumberGenerator _rand_gen;
 
     QubitSystem(int qubit_count) {
         _qubit_count = qubit_count;
         Assert(qubit_count < 24); // The system memory scales with 2^N, so 24 are many megabytes!
         _qubit_states.resize(std::pow(2, qubit_count));
         _qubit_states[0] = QubitsState::from_prob_and_phase(1, 0);
+        _rand_gen = vicmil::RandomNumberGenerator();
     }
 
     int get_qubit_mask(int qubit_index) {
