@@ -111,10 +111,10 @@ namespace vicmil {
 
     class Rect {
         public:
-        double x;
-        double y;
-        double w;
-        double h;
+        double x = 0;
+        double y = 0;
+        double w = 0;
+        double h = 0;
         double min_x() {
             return x;
         }
@@ -126,6 +126,12 @@ namespace vicmil {
         }
         double max_y() {
             return y + h;
+        }
+        double center_x() {
+            return x + (w / 2.0);
+        }
+        double center_y() {
+            return y + (h / 2.0);
         }
         bool is_inside_rect(double x_, double y_) {
             if(!in_range(x_, x, x + w)) {

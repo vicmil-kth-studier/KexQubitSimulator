@@ -1,8 +1,6 @@
 #pragma once
-#define USE_DEBUG
 #include "L2_test.h"
 #include <regex>
-
 
 
 namespace vicmil {
@@ -36,6 +34,10 @@ void TEST_string_replace() {
 }
 AddTest(TEST_string_replace);
 
+/**
+ * Convert a vector of double type to a single string
+ * "{123.321, 314.0, 42.0}"
+*/
 inline std::string vec_to_string(const std::vector<double>& vec) {
     std::string out_str;
     out_str += "{ ";

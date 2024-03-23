@@ -9,6 +9,47 @@
 #include <filesystem>
 
 namespace vicmil {
+#ifdef USE_DEBUG
+/**
+ * Evaluates to nothing if debug is disabled
+*/ 
+#define IfDebug(x) x
+#else
+/**
+ * Evaluates to nothing if debug is disabled
+*/ 
+#define IfDebug(x)
+#endif 
+
+
+/**
+ * Get the filename of the current file as a string
+*/
+#define GetFileName vicmil::split_string(__FILE__, '/').back()
+
+/**
+ * Get info about current line as a string, contains the following info
+ *  - The file name
+ *  - The function name
+ *  - The line number
+*/
+#define GetLineInfo GetFileName + " " +  __func__ + "() ln: " + std::to_string(__LINE__) + " "
+
+/**
+ * Get info about current line as a string, contains the following info
+ *  - The file path(relative to cpp file where it compiled)
+ *  - The function name
+ *  - The line number
+*/
+#define GetLongLineInfo std::string(__FILE__) + " " +  __func__ + "() ln: " + std::to_string(__LINE__) + " "
+
+/**
+ * Performs cout but with more info about where it was printed such as
+ *  - filename
+ *  - line number
+*/ 
+#define Print(x) std::cout << GetFileName << ": ln" << __LINE__ << ": " << x << std::endl
+
 
 /**
  * Split a string for each separator character into a vector
@@ -48,7 +89,8 @@ inline bool string_contains(const std::string& str, const std::string& substr) {
     return str.find(substr) != std::string::npos;
 }
 
-/** Determine if a string matches the keywords
+/** 
+ * Determine if a string matches the keywords
  * Returns false if it does not match any keywords
  * Returns false if it matches with any prohibited keywords, marked with ! in front
  * Otherwise, returns true
@@ -72,13 +114,19 @@ inline bool match_keywords(const std::string str, const std::vector<std::string>
     return return_val;
 }
 
-
-
 /**
- * Get the filename of the current file
+ * Only executes x if it is relevant
+ * relevant means that the line nr, function or path matches with the keywords
+ * @arg x the code that should be masked
+ * @arg keywords a std::vector<std::string> with the keywords 
 */
-#define GetFileName vicmil::split_string(__FILE__, '/').back()
-}
+#define IfRelevant(x, keywords) \
+    { \
+        static const bool __relevant__ = vicmil::match_keywords(GetLongLineInfo, keywords); \
+        if (__relevant__) { \
+            x; \
+        } \
+    }
 
 #ifdef DEBUG_KEYWORDS
     const std::string __debug_keywords_raw__ = DEBUG_KEYWORDS;
@@ -88,53 +136,93 @@ inline bool match_keywords(const std::string str, const std::vector<std::string>
 
 const std::vector<std::string> __debug_keywords__ = vicmil::split_string(__debug_keywords_raw__, ',');
 
-namespace vicmil {
-#define GetLineIdentifier GetFileName + " " +  __func__ + "() ln: " + std::to_string(__LINE__) + " " // Used to see if line should be printed
-#define GetLineIdentifierLong std::string(__FILE__) + " " +  __func__ + "() ln: " + std::to_string(__LINE__) + " " // Used to see if line should be printed
 
-#define IfRelevantDebug(x) \
-    { \
-        static const bool __relevant__ = vicmil::match_keywords(GetLineIdentifierLong, __debug_keywords__); \
-        if (__relevant__) { \
-            x; \
-        } \
-    }
 
-        
 #ifdef USE_DEBUG
+/**
+ * Disables all the logging inside a function
+*/
 #define DisableLogging const std::vector<std::string> __debug_keywords__ = {};
 #else
+/**
+ * Disables all the logging inside a function
+*/
 #define DisableLogging ;
 #endif 
 
+
 #ifdef USE_DEBUG
-#define Debug(x) IfRelevantDebug(std::cout << GetFileName << ": ln" << __LINE__ << ": " << x << std::endl)
+/**
+ * Print if debug is enabled, otherwise it evaluates to nothing
+*/
+#define Debug(x) IfRelevant(Print(x), __debug_keywords__)
 #else
+/**
+ * Print if debug is enabled, otherwise it evaluates to nothing
+*/
 #define Debug(x) 
 #endif 
 
+
 #ifdef USE_DEBUG
-#define Assert(x) if((x) == false) {std::cout << GetFileName << ": ln" << __LINE__ << ": " << "Assert failed! \n" << #x << std::endl; throw;}
-//#define Assert(x) assert(x)
+/**
+ * Assert that some statement is true, it is is not, throw an error
+*/
+#define Assert(x) if((x) == false) {Print("Assert failed! \n" << #x); throw;}
 #else
+/**
+ * Assert that some statement is true, it is is not, throw an error
+*/
 #define Assert(x)
 #endif 
 
 
 #ifdef USE_DEBUG
+/**
+ * Assert that two numerical values are equal to each other
+ * @arg v1: The first numerical value
+ * @arg v2: The second numerical value
+ * @arg deviance: the deviance allowed between v1 and v2
+*/
 #define AssertEq(v1, v2, deviance) Assert(abs(v1 - v2) < deviance)
 #else
+/**
+ * Assert that two numerical values are equal to each other
+ * @arg v1: The first numerical value
+ * @arg v2: The second numerical value
+ * @arg deviance: the deviance allowed between v1 and v2
+*/
 #define Assert(x)
 #endif 
 
+/**
+ * Print an error message and then throw an error
+*/
+#define ThrowError(x) Print(x); throw
 
-#define ThrowError(x) std::cout << GetFileName << ": ln" << __LINE__ << ": " << x << std::endl; throw
-#define ThrowNotImplemented() std::cout << GetFileName << ": ln" << __LINE__ << ": " << "Not implemented yet!" << std::endl; throw
+/**
+ * Print "Not implemented yet!", then throw an error
+ * Used for sections of code that has yet to be implemented
+*/
+#define ThrowNotImplemented() ThrowError("Not implemented yet!")
 
-#define START_TRACE_FUNCTION() Debug(std::string("start ") + __func__)
-#define END_TRACE_FUNCTION() Debug(std::string("exit ") + __func__)
-
+/**
+ * Print the code, and then what the code evaluated to
+ * @arg x: The code to use
+*/
 #define DebugExpr(x) Debug(#x << ": '" << x << "'")
+
+/**
+ * Print that a function has begun being executed
+ *   Good for degugging code where you want to know what functions are executed
+*/
+#define START_TRACE_FUNCTION() Debug(std::string("start ") + __func__)
+
+/**
+ * Print that a function has existed
+ *   Good for degugging code where you want to know what functions are executed
+*/
+#define END_TRACE_FUNCTION() Debug(std::string("exit ") + __func__)
 
 /**
  * Throws an error if val != expected, also prints a nice error message

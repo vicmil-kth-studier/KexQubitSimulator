@@ -177,46 +177,6 @@ public:
     }
 };
 
-class TextWindow {
-public:
-    vicmil::MouseState prev_mouse_state = vicmil::MouseState();
-    vicmil::MouseState mouse_state = vicmil::MouseState();
-    vicmil::app::TextConsole console = vicmil::app::TextConsole();
-    bool _mouse_left_clicked() {
-        return (mouse_state.left_button_is_pressed() && 
-            !prev_mouse_state.left_button_is_pressed());
-    }
-    bool mouse_inside_window() {
-        double mouse_x = vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width);
-        double mouse_y = vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height);
-        if(console.min_x <= mouse_x && 
-            console.max_x >= mouse_x && 
-            console.min_y <= mouse_y && 
-            console.max_y >= mouse_y) {
-            return true;
-        }
-        return false;
-    }
-    void get_mouse_char_pos(int* char_x, int* char_y) {
-        double mouse_x = vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width);
-        double mouse_y = vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height);
-        double rel_mouse_x = mouse_x - console.min_x;
-        double rel_mouse_y = console.max_y - mouse_y;
-
-        double letter_width_with_spacing = vicmil::graphics_help::get_letter_width_with_spacing(console.letter_width);
-        double letter_height_with_spacing = vicmil::graphics_help::get_letter_height_with_spacing(
-            console.letter_width, 
-            vicmil::app::globals::main_app->graphics_setup.get_window_aspect_ratio());
-
-        *char_x = rel_mouse_x / letter_width_with_spacing;
-        *char_y = rel_mouse_y / letter_height_with_spacing;
-    }
-    void update(const vicmil::MouseState& new_mouse_state) {
-        prev_mouse_state = mouse_state;
-        mouse_state = new_mouse_state;
-    }
-};
-
 class QuantumCircuitInterface {
     public:
     // Technical stuff

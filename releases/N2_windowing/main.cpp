@@ -7,6 +7,8 @@ using namespace vicmil;
 FPSCounter fps_counter;
 const int FPS = 30;
 
+vicmil::WindowLayout window_layout = vicmil::WindowLayout();
+
 void render() {
     clear_screen();
 

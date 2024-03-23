@@ -17,8 +17,8 @@ public:
 */
 class MouseState {
 public:
-    int _x;
-    int _y;
+    int _x; // The x position in pixels
+    int _y; // The y position in pixels
     Uint32 _button_state;
     MouseState() { // May not work if update_SDL has not been called for a while
         _button_state = SDL_GetMouseState(&_x, &_y);
@@ -37,6 +37,31 @@ public:
     }
     bool right_button_is_pressed() {
         return (bool)(_button_state & SDL_BUTTON(3));
+    }
+};
+
+/**
+ * Mouse tracker
+*/
+class MouseTracker {
+    MouseState _last_mouse_state = MouseState();
+public:
+    MouseState state = MouseState();
+    void update(MouseState new_mouse_state = MouseState()) {
+        _last_mouse_state = state;
+        state = new_mouse_state;
+    }
+    bool mouse_left_clicked() {
+        if(!_last_mouse_state.left_button_is_pressed() && state.left_button_is_pressed()) {
+            return true;
+        }
+        return false;
+    }
+    bool mouse_right_clicked() {
+        if(!_last_mouse_state.right_button_is_pressed() && state.right_button_is_pressed()) {
+            return true;
+        }
+        return false;
     }
 };
 

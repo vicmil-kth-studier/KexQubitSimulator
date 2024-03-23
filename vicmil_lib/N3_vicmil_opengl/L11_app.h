@@ -175,35 +175,50 @@ namespace vicmil {
             vicmil::app::globals::main_app->shared_models_buffer.draw_object(model_index, mvp, &vicmil::app::globals::main_app->program);
         }
 
+        /**
+         * Determines if mouse is inside a ractangle in screen coordinates, eg from -1 to 1 in openGL fashion
+        */
+        bool mouse_inside_rect(Rect& rect, MouseState mouse_state = MouseState()) {
+            double mouse_x = vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width);
+            double mouse_y = vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height);
+            return rect.is_inside_rect(mouse_x, mouse_y);
+        }
+
+
         class TextButton {
         public:
             std::string text;
-            double letter_width = 0.04;
-            double center_x;
-            double center_y;
-            bool is_pressed(vicmil::MouseState mouse_state) {
-                double width = vicmil::graphics_help::get_letter_width_with_spacing(letter_width) * text.size();;
-                double height = vicmil::graphics_help::get_letter_height_with_spacing(letter_width, vicmil::app::globals::main_app->graphics_setup.get_window_aspect_ratio());
-                double x = center_x - width / 2;
-                double y = center_y + height / 2 - height;
+            Rect rect; // Where it should be on screen
+            double _get_text_width(double letter_width) {
+                return vicmil::graphics_help::get_letter_width_with_spacing(letter_width) * text.size();
+            }
+            double _get_text_height(double letter_width) {
+                return vicmil::graphics_help::get_letter_height_with_spacing(letter_width, vicmil::app::globals::main_app->graphics_setup.get_window_aspect_ratio());
+            }
+            /**
+             * Fetch the letter width that fits the button the best
+             *  eg. the largest text size where it still fits within rectangle
+            */
+            double _get_letter_width() {
+                // Fetch the letter width that makes text fit in pos as well as possible
+                double letter_width = 0.01; // Some start value to try
+                double text_width = _get_text_width(0.01);
+                double text_height= _get_text_height(0.01);
 
-                Button button = Button();
-                button.screen_width = vicmil::app::globals::main_app->graphics_setup.width;
-                button.screen_height = vicmil::app::globals::main_app->graphics_setup.height;
-                button.width = width;
-                button.height = height;
-                button.start_x = x;
-                button.start_y = y;
-                return button.is_pressed(mouse_state);
+                // See how we should space letter width so it fits vertically and horizontally
+                double perfect_for_width = letter_width * (rect.w / text_width);
+                double perfect_for_height = letter_width * (rect.h / text_height);
+                return std::min(perfect_for_width, perfect_for_height);
+            }
+            bool is_pressed(vicmil::MouseState mouse_state = vicmil::MouseState()) {
+                return (mouse_state.left_button_is_pressed() && mouse_inside_rect(rect, mouse_state));
             }
             void draw() {
-                double width = vicmil::graphics_help::get_letter_width_with_spacing(letter_width) * text.size();
-                double height = vicmil::graphics_help::get_letter_height_with_spacing(
-                    letter_width, 
-                    vicmil::app::globals::main_app->graphics_setup.get_window_aspect_ratio()
-                );
-                double x = center_x - width / 2;
-                double y = center_y + height / 2;
+                double letter_width = _get_letter_width();
+                double text_width = _get_text_width(letter_width);
+                double text_height = _get_text_height(letter_width);
+                double x = rect.center_x() - (text_width / 2.0);
+                double y = rect.center_y() + (text_height / 2.0);
                 draw2d_text(text, x, y, letter_width);
             }
         };
@@ -212,15 +227,12 @@ namespace vicmil {
         public:
             std::vector<std::string> text_buffer = std::vector<std::string>();
             int total_line_count = 0;
-            double min_x = -1;
-            double min_y = -1;
-            double max_x = 0;
-            double max_y = 0;
+            Rect window_pos;
 
             double letter_width = 0.01;
         
-            TextConsole() {
-                text_buffer.resize(50);
+            TextConsole(unsigned int buffer_size = 50) {
+                text_buffer.resize(buffer_size);
             }
 
             int get_buffer_index(int line_num) {
@@ -243,12 +255,20 @@ namespace vicmil {
                     text_buffer[i] = "";
                 }
             }
-            void draw(double screen_aspect_ratio = -1) {
-                std::string draw_string;
+            double get_letter_width_with_spacing() {
                 double letter_width_with_spacing = vicmil::graphics_help::get_letter_width_with_spacing(letter_width);
+                return letter_width_with_spacing;
+            }
+            double get_letter_height_with_spacing() {
                 double letter_height_with_spacing = vicmil::graphics_help::get_letter_height_with_spacing(letter_width, globals::main_app->graphics_setup.get_window_aspect_ratio());
-                int max_characters_per_line = (int)((max_x - min_x) / letter_width_with_spacing);
-                int max_line_count =          (int)((max_y - min_y) / letter_height_with_spacing);
+                return letter_height_with_spacing;
+            }
+            void draw() {
+                std::string draw_string;
+                double letter_width_with_spacing = get_letter_width_with_spacing();
+                double letter_height_with_spacing = get_letter_height_with_spacing();
+                int max_characters_per_line = (int)(window_pos.w / letter_width_with_spacing);
+                int max_line_count =          (int)(window_pos.h / letter_height_with_spacing);
 
                 int draw_line_count = std::min((int)text_buffer.size(), max_line_count);
 
@@ -262,9 +282,29 @@ namespace vicmil {
                     }
                     draw_string += line_str + "\n";
                 }
-                draw2d_text(draw_string, min_x, max_y, letter_width);
+                draw2d_text(draw_string, window_pos.min_x(), window_pos.max_y(), letter_width);
+            }
+            /**
+             * Set the character width so that the window can fit a certain number of lines vertically
+             * Needs to be called again every time the window resizes!
+            */
+            void set_vertical_line_count(int line_count) {
+                double current_letter_height = get_letter_height_with_spacing();
+                double target_letter_height = window_pos.h / line_count;
+                // If the current letter height is grater than the target_letter_height, then the letter height should decrease
+                letter_width = letter_width * (target_letter_height / current_letter_height);
             }
 
+        };
+
+        class WindowLayoutAndMouse {
+            public:
+            WindowLayout layout = WindowLayout();
+            bool mouse_inside_window(int window_id, MouseState& mouse_state) {
+                Rect window_pos = Rect();
+                layout.get_window_position(window_id, &window_pos);
+                return mouse_inside_rect(window_pos, mouse_state);
+            }
         };
     }
 }

@@ -7,7 +7,7 @@
 
 namespace vicmil {
 /**
- * Declare a void function
+ * Type of a void function
 */
 typedef void (*void_function_type)();
 
@@ -70,7 +70,7 @@ struct TestClass : public FactoryBase {
 #define TestWrapper(test_name, func) \
 namespace test_class { \
     struct test_name : vicmil::TestClass { \
-        test_name() : vicmil::TestClass(GetLineIdentifier, GetLineIdentifierLong) {} \
+        test_name() : vicmil::TestClass(GetLineInfo, GetLongLineInfo) {} \
         func \
     }; \
 } \
