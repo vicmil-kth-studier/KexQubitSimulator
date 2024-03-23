@@ -50,6 +50,10 @@ namespace vicmil {
 */ 
 #define Print(x) std::cout << GetFileName << ": ln" << __LINE__ << ": " << x << std::endl
 
+/**
+ * Prints the code along with what the code evaluated to
+*/ 
+#define PrintExpr(x) Print(#x << ": '" << x << "'")
 
 /**
  * Split a string for each separator character into a vector

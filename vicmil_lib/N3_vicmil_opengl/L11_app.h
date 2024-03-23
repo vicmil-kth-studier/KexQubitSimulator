@@ -175,12 +175,23 @@ namespace vicmil {
             vicmil::app::globals::main_app->shared_models_buffer.draw_object(model_index, mvp, &vicmil::app::globals::main_app->program);
         }
 
+
+        /**
+         * Get mouse position on the screen in openGL coordinates, eg from -1 to 1
+        */
+        double get_mouse_pos_x(MouseState mouse_state = MouseState()) {
+            return vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width);
+        }
+        double get_mouse_pos_y(MouseState mouse_state = MouseState()) {
+            return vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height);
+        }
+
         /**
          * Determines if mouse is inside a ractangle in screen coordinates, eg from -1 to 1 in openGL fashion
         */
         bool mouse_inside_rect(Rect& rect, MouseState mouse_state = MouseState()) {
-            double mouse_x = vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width);
-            double mouse_y = vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height);
+            double mouse_x = get_mouse_pos_x(mouse_state);
+            double mouse_y = get_mouse_pos_y(mouse_state);
             return rect.is_inside_rect(mouse_x, mouse_y);
         }
 

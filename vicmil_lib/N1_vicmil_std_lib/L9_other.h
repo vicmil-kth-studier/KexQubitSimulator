@@ -115,6 +115,13 @@ namespace vicmil {
         double y = 0;
         double w = 0;
         double h = 0;
+        Rect() {}
+        Rect(double x_, double y_, double w_, double h_) {
+            x = x_;
+            y = y_;
+            w = w_;
+            h = h_;
+        }
         double min_x() {
             return x;
         }

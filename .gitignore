@@ -1,2 +1,5 @@
 *.out
 *cache*
+*test/run.wasm
+*test/run.html
+*test/run.js

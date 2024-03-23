@@ -69,7 +69,7 @@ public:
      * Get time in seconds since the timer was either created or reset
     */
     double get_time_s() {
-        return _start_s - get_time_since_epoch_s();
+        return get_time_since_epoch_s() - _start_s;
     }
     /**
      * Get time in milliseconds since the timer was either created or reset
@@ -122,6 +122,7 @@ public:
     void record_frame() {
         frame_count += 1;
         double timer_time = timer.get_time_s();
+        DebugExpr(timer_time);
 
         // Reset the timer each second and calculate the fps count
         if(timer_time > 1.0) {
