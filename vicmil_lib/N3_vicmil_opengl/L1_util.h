@@ -7,34 +7,27 @@
 #include <SDL2/SDL_opengles2.h>
 
 namespace vicmil {
-static void GLClearError() {
-    //START_TRACE_FUNCTION();
+/**
+ * Clear out any OpenGL errors and print out the errors if there was any
+ *  Returns -1 if any errors were detected
+*/
+static int GLClearErrors() {
     bool error_detected = false;
     while(GLenum error = glGetError()) {
-        std::cout << "unhandled [OpenGl Error] (" << error << ")" << std::endl;
+        Print("[OpenGl Error] \"" << error << "\"");
         error_detected = true;
     }
     if(error_detected) {
-        Debug("Throw exception");
-        throw std::invalid_argument("opengl threw exception!");
+        return -1;
     }
-    //END_TRACE_FUNCTION();
-    return;
+    return 0;
 }
 
-static void GLCheckError() {
-    //START_TRACE_FUNCTION();
-    bool error_detected = false;
-    while(GLenum error = glGetError()) {
-        std::cout << "[OpenGl Error] (" << error << ")" << std::endl;
-        error_detected = true;
-    }
-    if(error_detected) {
-        Debug("Throw exception");
-        throw std::invalid_argument("opengl threw exception!");
-    }
-    //END_TRACE_FUNCTION();
-}
-
-#define GLCall(x) try{GLClearError(); x; GLCheckError();} catch (const std::exception& e) {ThrowError("Opengl threw error!: " << e.what());}
+/**
+ * Detect OpenGL errors both before and after the expression was executed
+*/
+#define GLCall(x) \
+if(GLClearErrors() == -1) {ThrowError("Unhandled opengl error before call!");} \
+x; \
+if(GLClearErrors() == -1) {ThrowError("Opengl call caused error!");}
 }

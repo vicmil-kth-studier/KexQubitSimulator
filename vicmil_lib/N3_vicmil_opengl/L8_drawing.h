@@ -17,15 +17,10 @@ static void set_depth_testing_enabled(bool is_enabled) {
     }
 }
 
-struct ColorTriangleVertex {
-    float vertex[3];
-    float color[3];
-};
-
 struct TextureTriangleVertex {
-    float vertex[3];
-    float color[3];
-    float tex_coord[2];
+    float vertex[3]; // x, y, z
+    float color[4]; // rgba
+    float tex_coord[2]; // x, y
     TextureTriangleVertex() {}
     TextureTriangleVertex(float v1, float v2, float v3, float tex_x, float tex_y) {
         vertex[0] = v1;
@@ -38,11 +33,12 @@ struct TextureTriangleVertex {
         color[0] = 1.0f;
         color[1] = 1.0f;
         color[2] = 1.0f;
+        color[3] = 1.0f;
     }
 };
 
 struct TraingleIndecies {
-    unsigned int index[3];
+    unsigned int index[3]; // index of triangle corner 1, 2 and 3
     TraingleIndecies() {}
     TraingleIndecies(unsigned int i1, unsigned int i2, unsigned int i3) {
         index[0] = i1;
@@ -53,7 +49,7 @@ struct TraingleIndecies {
 
 class Drawable3DModel {
 public:
-    std::vector<ColorTriangleVertex> _color_triangle_vertecies;
+    std::vector<TextureTriangleVertex> _triangle_vertecies;
     std::vector<TraingleIndecies> _triangle_indecies;
     static Drawable3DModel from_models_info(ModelsInfo* models_info) {
         Drawable3DModel new_drawable_object = Drawable3DModel();
@@ -74,16 +70,20 @@ public:
                 Surface& surface = surfaces[i2];
                 Color& color = material.color;
                 for(int i3 = 0; i3 < 3; i3++) {
-                    ColorTriangleVertex new_vertex;
+                    TextureTriangleVertex new_vertex;
                     new_vertex.color[0] = color.v.v[0];
                     new_vertex.color[1] = color.v.v[1];
                     new_vertex.color[2] = color.v.v[2];
+                    new_vertex.color[3] = 1.0; // Completely opaque
 
                     Vertex& vertex = models_info->obj_file_contents.verticies[surface.vertex_index.v[i3]-1];
                     new_vertex.vertex[0] = vertex.v.v[0];
                     new_vertex.vertex[1] = vertex.v.v[1];
                     new_vertex.vertex[2] = vertex.v.v[2];
-                    new_drawable_object._color_triangle_vertecies.push_back(new_vertex);
+
+                    new_vertex.tex_coord[0] = -1.0;
+                    new_vertex.tex_coord[1] = -1.0;
+                    new_drawable_object._triangle_vertecies.push_back(new_vertex);
                 }
             }
         }
@@ -91,14 +91,14 @@ public:
     }
     IndexVertexBufferPair create_IndexVertexBufferPair() {
         IndexVertexBufferPair new_buffer_pair;
-        new_buffer_pair.vertex_buffer = GLBuffer::generate_buffer(sizeof(ColorTriangleVertex) * this->_color_triangle_vertecies.size(), &this->_color_triangle_vertecies[0], GL_ARRAY_BUFFER);
+        new_buffer_pair.vertex_buffer = GLBuffer::generate_buffer(sizeof(TextureTriangleVertex) * this->_triangle_vertecies.size(), &this->_triangle_vertecies[0], GL_ARRAY_BUFFER);
         new_buffer_pair.index_buffer = GLBuffer::generate_buffer(sizeof(TraingleIndecies) * this->_triangle_indecies.size(), &this->_triangle_indecies[0], GL_ELEMENT_ARRAY_BUFFER);
         return new_buffer_pair;
     }
     void print_content() {
         for(int i = 0; i < _triangle_indecies.size(); i++) {
             for(int i2 = 0; i2 < 3; i2++) {
-                auto vertex = _color_triangle_vertecies[_triangle_indecies[i].index[i2]];
+                auto vertex = _triangle_vertecies[_triangle_indecies[i].index[i2]];
                 std::cout << "vert " << vertex.vertex[0] << " " << vertex.vertex[1] << " " << vertex.vertex[2] << std::endl;
             }
             std::cout << std::endl;
@@ -116,13 +116,13 @@ public:
     std::vector<unsigned int> index_buffer_obj_size;
     Shared3DModelsBuffer() {}
     Shared3DModelsBuffer(std::vector<Drawable3DModel> objects) {
-        std::vector<ColorTriangleVertex> vertecies = std::vector<ColorTriangleVertex>();
+        std::vector<TextureTriangleVertex> vertecies = std::vector<TextureTriangleVertex>();
         std::vector<TraingleIndecies> indecies = std::vector<TraingleIndecies>();
         unsigned int vertex_offset = 0;
         unsigned int index_offset = 0;
         for(unsigned int i = 0; i < objects.size(); i++) {
             // Push new objects vertecies and indecies
-            vertecies.insert(vertecies.end(), objects[i]._color_triangle_vertecies.begin(), objects[i]._color_triangle_vertecies.end());
+            vertecies.insert(vertecies.end(), objects[i]._triangle_vertecies.begin(), objects[i]._triangle_vertecies.end());
             indecies.insert(indecies.end(), objects[i]._triangle_indecies.begin(), objects[i]._triangle_indecies.end());
 
             // Update index positions
@@ -134,7 +134,7 @@ public:
 
             index_buffer_obj_offset.push_back(index_offset);
             index_buffer_obj_size.push_back(objects[i]._triangle_indecies.size());
-            vertex_offset += objects[i]._color_triangle_vertecies.size();
+            vertex_offset += objects[i]._triangle_vertecies.size();
             index_offset += objects[i]._triangle_indecies.size();
         };
 
@@ -142,7 +142,7 @@ public:
             &indecies[0], 
             sizeof(TraingleIndecies) * indecies.size(), 
             &vertecies[0],
-            sizeof(ColorTriangleVertex) * vertecies.size()
+            sizeof(TextureTriangleVertex) * vertecies.size()
         );
     }
     static Shared3DModelsBuffer from_models(std::vector<Drawable3DModel> objects) {
@@ -160,14 +160,14 @@ public:
     }
     void draw_object(unsigned int model_index, glm::mat4 matrix_mvp, GPUProgram* program) {
         buffers.bind();
-        buffers.set_vertex_buffer_layout();
+        buffers.set_vertex_buffer_layout_to_example();
         UniformBuffer::set_mat4f(matrix_mvp, *program, "u_MVP");
         unsigned int offset = index_buffer_obj_offset[model_index] * sizeof(TraingleIndecies);
         buffers.draw(index_buffer_obj_size[model_index], offset);
     }
     void bind() {
         buffers.bind();
-        buffers.set_vertex_buffer_layout();
+        buffers.set_vertex_buffer_layout_to_example();
     }
 };
 

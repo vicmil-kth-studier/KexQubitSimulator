@@ -2,6 +2,9 @@
 #include "L2_shader.h"
 
 namespace vicmil {
+/**
+ * Create a vertex array object, there usually have to exist one of those for the program to work!
+*/
 GLuint create_vertex_array_object() {
     GLuint vao;
     glGenVertexArraysOES(1, &vao);
@@ -95,6 +98,13 @@ public:
         }
         glUniform4f(location, data[0], data[1], data[2], data[3]);
     }
+    /**
+     * Set the data in a uniform buffer to a 4x4 matrix
+     * 
+     * @arg data: The data you want to put in the buffer, 4x4 matrix
+     * @arg program: The GPU program, it contains information about the uniform variable
+     * @arg shader_variable_name: the name of the uniform buffer variable in the program
+    */
     static void set_mat4f(glm::mat4 data, GPUProgram& program, std::string shader_variable_name) {
         int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
         if (location == -1) {
@@ -129,6 +139,9 @@ public:
     }
 };
 
+/**
+ * Help class specify how the vertex data are aligned in the memory
+*/
 class VertexBufferLayout {
 public:
     std::vector<VertexBufferElement> buffer_elements;
@@ -163,6 +176,11 @@ public:
     }
 };
 
+/**
+ * It is often good to group an index buffer and a vertex buffer as a pair
+ *  - A vertex buffer contains all the triangle corners in a jumbled mess
+ *  - The Index buffer chooses aming all the corners to decide which corners should make up a triangle
+*/
 class IndexVertexBufferPair {
 public:
     GLBuffer vertex_buffer;
@@ -173,31 +191,38 @@ public:
         new_buffer_pair.index_buffer = GLBuffer::generate_buffer(index_data_byte_size, index_data, GL_ELEMENT_ARRAY_BUFFER);
         return new_buffer_pair;
     }
+    /**
+     * Overwrite all the data in the vertex and index buffer
+    */
     void overwrite_data(void* index_data, unsigned int index_data_byte_size, void* vertex_data, unsigned int vertex_data_byte_size) {
         vertex_buffer.overwrite_buffer_data(vertex_data_byte_size, vertex_data);
         index_buffer.overwrite_buffer_data(index_data_byte_size, index_data);
     }
-    static void set_vertex_buffer_layout() {
+    // Set the buffer layout to follow the shader example specified in L2_shader.h
+    static void set_vertex_buffer_layout_to_example() {
         std::vector<VertexBufferElement> elements = {
             VertexBufferElement::create_element(GL_FLOAT, 3),
-            VertexBufferElement::create_element(GL_FLOAT, 3)
-        };
-        VertexBufferLayout layout = VertexBufferLayout::from_elements(elements);
-        layout.set_vertex_buffer_layout();
-    }
-    static void set_texture_vertex_buffer_layout() {
-        std::vector<VertexBufferElement> elements = {
-            VertexBufferElement::create_element(GL_FLOAT, 3),
-            VertexBufferElement::create_element(GL_FLOAT, 3),
+            VertexBufferElement::create_element(GL_FLOAT, 4),
             VertexBufferElement::create_element(GL_FLOAT, 2)
         };
         VertexBufferLayout layout = VertexBufferLayout::from_elements(elements);
         layout.set_vertex_buffer_layout();
     }
+    /**
+     * Bind the vertex and index buffers on the GPU. This means that it 
+     *  is these buffers the GPU refers to until another buffer calls bind()
+     *  there can only exist one bound buffer of each type at one time
+    */
     void bind() {
         vertex_buffer.bind_buffer();
         index_buffer.bind_buffer();
     }
+    /**
+     * Use buffer to perform program on GPU, the GPU Program must be bound before this call
+     * @arg triangle_count: The number of triangles to use, if it is -1, use all triangles in index buffer
+     * @arg offset_in_bytes: The offset of where to begin in index buffer, great if you only want to use
+     *    a part of the buffer, otherwise just leave it
+    */
     void draw(int triangle_count=-1, unsigned int offset_in_bytes=0) {
         if(triangle_count > 0) {
             GLCall(glDrawElements(GL_TRIANGLES, triangle_count * 3, GL_UNSIGNED_INT, reinterpret_cast<const void*>(offset_in_bytes)));

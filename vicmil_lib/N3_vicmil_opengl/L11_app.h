@@ -16,8 +16,7 @@ namespace vicmil {
             // Add graphics setup, programs and other stuff here
             vicmil::FrameStabilizer frame_stabilizer;
             GraphicsSetup graphics_setup;
-            GPUProgram program;
-            GPUProgram texture_program;
+            GPUProgram example_program;
             IndexVertexBufferPair index_vertex_buffer;
             Texture text_texture;
             Shared3DModelsBuffer shared_models_buffer;
@@ -32,8 +31,7 @@ namespace vicmil {
                 Debug(glGetString (GL_SHADING_LANGUAGE_VERSION));
 
                 // Load gpu program for how to interpret the data
-                texture_program = GPUProgram::from_strings(vicmil::shader_example::texture_vert_shader, vicmil::shader_example::texture_frag_shader);
-                program = GPUProgram::from_strings(vicmil::shader_example::vert_shader, vicmil::shader_example::frag_shader);
+                example_program = GPUProgram::from_strings(vicmil::shader_example::vert_shader_example, vicmil::shader_example::frag_shader_example);
                 std::vector<float> vertices = {0.0f, 0.5f, 3.0f,
                          0.5f, -0.5f, 3.0f,
                          -0.5f, -0.5f, 3.0f};
@@ -45,8 +43,8 @@ namespace vicmil {
                     &vertices[0],
                     9 * sizeof(float));
 
-                RawImageRGB raw_image_alphabet = graphics_help::get_raw_image_of_alphabet();
-                text_texture = Texture::from_raw_image_rgb(raw_image_alphabet);
+                RawImageRGBA raw_image_alphabet = graphics_help::get_raw_image_of_alphabet();
+                text_texture = Texture::from_raw_image_rgba(raw_image_alphabet);
 
                 // Load models
                 shared_models_buffer = Shared3DModelsBuffer::from_models(graphics_help::get_models_vector());
@@ -58,6 +56,7 @@ namespace vicmil {
         
         void app_loop_handler(VoidFuncRef init_func) {
             DisableLogging;
+            // Call init if it has not already been done
             if(globals::init_called == false) {
                 init_SDL();
                 if(globals::main_app == nullptr) {
@@ -66,6 +65,12 @@ namespace vicmil {
                 init_func.call();
                 globals::init_called = true;
             }
+
+            // Update camera
+            vicmil::app::globals::main_app->camera.screen_aspect_ratio = 
+                vicmil::app::globals::main_app->graphics_setup.get_window_aspect_ratio();
+
+            
             update_SDL();
             Debug("emscripten_loop_handler");
             if(globals::main_app != nullptr) {
@@ -118,7 +123,7 @@ namespace vicmil {
             double screen_aspect_ratio = globals::main_app->graphics_setup.get_window_aspect_ratio();
 
             // Make sure the right shader is loaded
-            globals::main_app->texture_program.bind_program();
+            globals::main_app->example_program.bind_program();
             
             // Add character rectangles to vertex and index buffer
             TextureTraingles text_trig = graphics_help::get_texture_triangles_from_text(text, x, y, letter_width, screen_aspect_ratio);
@@ -126,7 +131,7 @@ namespace vicmil {
             // Load the vertex buffer
             text_trig.overwrite_index_vertex_buffer_pair(globals::main_app->index_vertex_buffer);
             globals::main_app->index_vertex_buffer.bind();
-            globals::main_app->index_vertex_buffer.set_texture_vertex_buffer_layout();
+            globals::main_app->index_vertex_buffer.set_vertex_buffer_layout_to_example();
 
             // Make sure the right texture is loaded
             globals::main_app->text_texture.bind();
@@ -156,7 +161,7 @@ namespace vicmil {
         
         void draw_3d_model(unsigned int model_index, vicmil::ModelOrientation obj_orientation, double scale = 1.0) {
             // Make sure the right shader is loaded
-            globals::main_app->program.bind_program();
+            globals::main_app->example_program.bind_program();
             
             // Load the correct model:
             globals::main_app->shared_models_buffer.bind();
@@ -172,7 +177,7 @@ namespace vicmil {
             set_depth_testing_enabled(true);
 
             // Perform the drawing
-            vicmil::app::globals::main_app->shared_models_buffer.draw_object(model_index, mvp, &vicmil::app::globals::main_app->program);
+            vicmil::app::globals::main_app->shared_models_buffer.draw_object(model_index, mvp, &vicmil::app::globals::main_app->example_program);
         }
 
 
@@ -194,7 +199,6 @@ namespace vicmil {
             double mouse_y = get_mouse_pos_y(mouse_state);
             return rect.is_inside_rect(mouse_x, mouse_y);
         }
-
 
         class TextButton {
         public:

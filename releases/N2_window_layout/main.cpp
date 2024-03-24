@@ -4,27 +4,49 @@
 
 using namespace vicmil;
 
-FPSCounter fps_counter;
 const int FPS = 30;
 
-vicmil::WindowLayout window_layout = vicmil::WindowLayout();
+class QuantumCircuitInterface {
+    vicmil::WindowLayout window_layout = vicmil::WindowLayout();
+    int output_console_window_id;
+    int quantum_circuit_window_id;
+
+};
+
+class ApplicationInterace {
+public:
+    FPSCounter fps_counter = FPSCounter();
+
+    vicmil::WindowLayout window_layout = vicmil::WindowLayout();
+    int top_bar_window_id;
+    int circuit_interface_window_id;
+
+    vicmil::app::TextButton top_bar = vicmil::app::TextButton();
+    ApplicationInterace() {
+        // Split window horizontal
+        window_layout.set_split_window_horizontal(window_layout.get_instance_id(), false);
+        circuit_interface_window_id = window_layout.add_subwindow(window_layout.get_instance_id(), 30, true);
+        top_bar_window_id = window_layout.add_subwindow(window_layout.get_instance_id(), 1, true);
+    }
+    void draw() {
+        DisableLogging;
+        fps_counter.record_frame();
+        Rect window_pos;
+        window_layout.get_window_position(top_bar_window_id, &window_pos);
+        DebugExpr(window_pos.to_string_min_max());
+        top_bar.rect = window_pos;
+        top_bar.text = "fps: " + std::to_string(fps_counter.get_fps());
+        top_bar.text += "   x: " + std::to_string(vicmil::app::get_mouse_pos_x());
+        top_bar.text += "   y: " + std::to_string(vicmil::app::get_mouse_pos_y());
+        top_bar.draw();
+    }
+};
+
+ApplicationInterace app_interface = ApplicationInterace();
 
 void render() {
     clear_screen();
-
-    // Update camera
-    vicmil::app::globals::main_app->camera.screen_aspect_ratio = 
-        vicmil::app::globals::main_app->graphics_setup.get_window_aspect_ratio();
-
-    fps_counter.record_frame();
-    double fps = fps_counter.get_fps();
-    std::string info_str = "fps: " + std::to_string(fps);
-
-    MouseState mouse_state = MouseState();
-    info_str += "   x: " + std::to_string(vicmil::x_pixel_to_opengl(mouse_state.x(), vicmil::app::globals::main_app->graphics_setup.width));
-    info_str += "   y: " + std::to_string(vicmil::y_pixel_to_opengl(mouse_state.y(), vicmil::app::globals::main_app->graphics_setup.height));
-
-    vicmil::app::draw2d_text(info_str, 0.0, 1.0, 0.02);
+    app_interface.draw();
 }
 
 // Runs at a fixed framerate
@@ -37,29 +59,8 @@ void init() {
     vicmil::app::set_render_func(VoidFuncRef(render));
     vicmil::app::set_game_update_func(VoidFuncRef(game_loop));
     vicmil::app::set_game_updates_per_second(FPS);
-    fps_counter = FPSCounter();
-
-    std::cout << vicmil::type_to_str<MouseState>() << std::endl;
-    AnyTypeInt my_int = AnyTypeInt();
-    my_int.int_ = 123;
-    AnyType* my_int_ptr = &my_int;
-    
-
-    AnyTypeInt* ptr1 = my_int_ptr->try_cast<AnyTypeInt>();
-    if(ptr1 == nullptr) {
-        std::cout << "ptr1 was null" << std::endl;
-    }
-    else {
-        std::cout << "ptr1 was not null" << std::endl;
-        std::cout << ptr1->int_ << std::endl;
-    }
-    AnyTypeString* ptr2 = my_int_ptr->try_cast<AnyTypeString>();
-    if(ptr2 == nullptr) {
-        std::cout << "ptr2 was null" << std::endl;
-    }
-    else {
-        std::cout << "ptr2 was not null" << std::endl;
-    }
+    app_interface = ApplicationInterace();
+    app_interface.window_layout.set_window_position(-1, -1, 1, 1);
 }
 
 

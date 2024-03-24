@@ -35,6 +35,13 @@ void TEST_string_replace() {
 AddTest(TEST_string_replace);
 
 /**
+ * Returns how many of that specific char was found in the string
+*/
+int count_char_in_string(std::string& str, char char_) {
+    return count(str.begin(), str.end(), char_);
+}
+
+/**
  * Convert a vector of double type to a single string
  * "{123.321, 314.0, 42.0}"
 */

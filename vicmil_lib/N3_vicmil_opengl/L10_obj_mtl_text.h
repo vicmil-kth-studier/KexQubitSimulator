@@ -2230,8 +2230,8 @@ namespace text_letter {
         TextureTraingles texture_indecies_and_verticies = TextureTraingles(VERTICIES, INDICIES);
         return texture_indecies_and_verticies;
     }
-    RawImageRGB get_raw_image_of_alphabet() {
-        std::vector<PixelRGB> pixels = {};
+    RawImageRGBA get_raw_image_of_alphabet() {
+        std::vector<PixelRGBA> pixels = {};
         pixels.resize(text_letter::ALPHABET_TEXTURE_WIDTH*text_letter::ALPHABET_TEXTURE_HEIGHT);
         for(int x = 0; x < text_letter::ALPHABET_TEXTURE_WIDTH; x++) {
             for(int y = 0; y < text_letter::ALPHABET_TEXTURE_HEIGHT; y++) {
@@ -2239,18 +2239,18 @@ namespace text_letter {
                 if(x < text_letter::LETTER_WIDTH && y < text_letter::LETTER_HEIGHT*text_letter::LETTER_COUNT) {
                     unsigned int alphabet_index = x + text_letter::LETTER_WIDTH*y;
                     if(text_letter::alphabet[alphabet_index] == '.') {
-                        pixels[pixel_index] = PixelRGB(0, 0, 0);
+                        pixels[pixel_index] = PixelRGBA(0, 0, 0, 1);
                     }
                     else {
-                        pixels[pixel_index] = PixelRGB(255, 255, 255);
+                        pixels[pixel_index] = PixelRGBA(255, 255, 255, 1);
                     }
                 }
                 else {
-                    pixels[pixel_index] = PixelRGB(0, 0, 0);
+                    pixels[pixel_index] = PixelRGBA(0, 0, 0, 1);
                 }
             }
         }
-        RawImageRGB new_raw_image = RawImageRGB(pixels, text_letter::ALPHABET_TEXTURE_WIDTH, text_letter::ALPHABET_TEXTURE_HEIGHT);
+        RawImageRGBA new_raw_image = RawImageRGBA(pixels, text_letter::ALPHABET_TEXTURE_WIDTH, text_letter::ALPHABET_TEXTURE_HEIGHT);
         return new_raw_image;
     }
 } 
