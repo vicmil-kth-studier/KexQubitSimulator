@@ -1,4 +1,4 @@
-#include "L3_gpu_setup_barebones.h"
+#include "L2_view_transform.h"
 
 namespace vicmil {
 namespace gpu_setup_general {
@@ -17,8 +17,6 @@ namespace gpu_setup_general {
 */
 const std::string vert_shader =
 vicmil::SHADER_VERSON_OPENGL_ES +
-"uniform mat4 u_MVP;\n"       // model view matrix (MVP) is a matrix that will be applied to all vertecies, 
-                              // can contain things like rotations or translations(moving objects in space)
 "attribute vec3 position;\n"  // The position of the vertex(triangle corner)
 "attribute vec4 color;\n"     // The color of the vertex(triangle corner)
 "attribute vec2 aTexCoord;\n" // The coordinate on the texture the vertex maps to
@@ -42,12 +40,7 @@ vicmil::SHADER_VERSON_OPENGL_ES +
 "uniform sampler2D ourTexture;\n"
 "\n"
 "void main() {\n"
-"    if(TexCoord.x < 0.0) {\n"
-"        gl_FragColor = v_Color;\n"
-"    }\n"
-"    else {\n"
-"       gl_FragColor = texture2D(ourTexture, TexCoord);\n"
-"    }\n"
+"    gl_FragColor = v_Color;\n"
 "}\n";
 
 vicmil::GPUProgram create_gpu_program() {
@@ -124,10 +117,10 @@ struct Triangles {
  * Create 2 triangles to reprent a rectangle of a specified color
 */
 static Triangles triangles_from_2d_rect(Rect rect, glm::vec4 color) {
-    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), 1.0); // (0, 0)
-    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), 1.0); // (0, 1)
-    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), 1.0); // (1, 0)
-    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.max_y(), 1.0); // (1, 1)
+    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), 0.0); // (0, 0)
+    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), 0.0); // (0, 1)
+    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), 0.0); // (1, 0)
+    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.max_y(), 0.0); // (1, 1)
 
     Triangle triangle1 = Triangle();
     triangle1.set_triangle_color(color);
@@ -170,17 +163,22 @@ public:
     void init() {
         // Setup Window
         gpu_setup.window_renderer = WindowRendererPair(1000, 1000);
+        create_vertex_array_object();
 
         // Setup GPU program
         Debug("Add GPU program settings");
         gpu_setup.program.program = GPUProgram::from_strings(vert_shader, frag_shader);
-        gpu_setup.program.uniform_mat4f_buffer_vars["u_MVP"] = glm::mat4(1.0); // Set view transform to do nothing
+        gpu_setup.program.bind_program();
+        //gpu_setup.program.uniform_mat4f_buffer_vars["u_MVP"] = glm::mat4(1.0); // Set view transform to do nothing
+        //gpu_setup.program.setup_uniform_buffer_variables();
         
         // Create a basic index vertex buffer pair with a rectangle in the middle of the screen
         gpu_setup.index_vertex_buffer = create_index_vertex_buffer_pair(
             triangles_from_2d_rect(Rect(-0.5, -0.5, 1.0, 1.0), glm::dvec4(1, 0, 0, 1))
         );
+        gpu_setup.index_vertex_buffer.bind();
         gpu_setup.vertex_buffer_layout = VertexBufferLayout(Triangles::get_vertex_buffer_layout());
+        gpu_setup.vertex_buffer_layout.set_vertex_buffer_layout();
 
         Debug("gpu_setup.setup()");
         gpu_setup.setup();
