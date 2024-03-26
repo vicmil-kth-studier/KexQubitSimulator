@@ -268,10 +268,10 @@ class ModelsInfo {
                 Surface& surface = surfaces[i2];
 
                 Debug("color: (" << material.color.v.r << ", " << material.color.v.g << ", " << material.color.v.b << ")"); 
-                for(int i3 = 0; i3 < 3; i3++) {
-                    Vertex& vertex = this->obj_file_contents.verticies[surface.vertex_index.index[i3]];
-                    Debug("vertex: (" << vertex.v.x << ", " << vertex.v.y << ", " << vertex.v.z << ")"); 
-                }
+                //for(int i3 = 0; i3 < 3; i3++) {
+                //    Vertex& vertex = this->obj_file_contents.verticies[surface.vertex_index.index[i3]];
+                //    Debug("vertex: (" << vertex.v.x << ", " << vertex.v.y << ", " << vertex.v.z << ")"); 
+                //}
 
                 Debug("");
             }

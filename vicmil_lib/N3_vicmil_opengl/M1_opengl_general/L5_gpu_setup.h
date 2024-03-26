@@ -45,10 +45,11 @@ class WindowRendererPair {
 public:
     SDL_Renderer *renderer = NULL;
     SDL_Window *window = NULL;
-    SDL_GLContext gl_context;
+    SDL_GLContext* gl_context = NULL;
 
     WindowRendererPair() {}
     WindowRendererPair(int width, int height) {
+        gl_context = new SDL_GLContext();
         vicmil::create_window_and_renderer(width, height, &renderer, &window);
     }
     void set_to_current_window() {

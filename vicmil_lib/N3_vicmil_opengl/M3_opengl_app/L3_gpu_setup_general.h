@@ -1,7 +1,7 @@
 #include "L2_view_transform.h"
 
 namespace vicmil {
-namespace gpu_setup_general {
+namespace general_gpu_setup {
 /**
  * This is an example of a vertex-fragment shader pair that can be used for many things, 
  *   more specialized shaders can use less memory, be faster, or do more advanced things
@@ -17,106 +17,92 @@ namespace gpu_setup_general {
 */
 const std::string vert_shader =
 vicmil::SHADER_VERSON_OPENGL_ES +
-"attribute vec3 position;\n"  // The position of the vertex(triangle corner)
-"attribute vec4 color;\n"     // The color of the vertex(triangle corner)
-"attribute vec2 aTexCoord;\n" // The coordinate on the texture the vertex maps to
-                              // (if x corordinate is negative I treat it as it doesn't map to any texture)
-"\n"
-"varying vec4 v_Color;\n"    
-"varying vec2 TexCoord;\n"   
-"\n"
-"void main() {\n"            
-"    gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-"    v_Color = vec4(color.x, color.y, color.z, 1.0);\n"
-"    TexCoord = aTexCoord;\n"
-"}\n";
+    "uniform mat4 u_MVP;\n"
+    "attribute vec3 position;    \n"
+    "attribute vec2 tex_coord;    \n"
+    "attribute vec3 color_;    \n"
+    "varying vec2 v_tex_coord;\n"   
+    "varying vec4 v_Color;\n"
+    "void main()                  \n"
+    "{                            \n"
+    "   v_Color = vec4(color_.x, color_.y, color_.z, 1.0);\n"
+    "   v_tex_coord = tex_coord;\n"
+    "   gl_Position = u_MVP * vec4(position.xyz, 1.0);  \n"
+    "}                            \n";
 
 const std::string frag_shader =
 vicmil::SHADER_VERSON_OPENGL_ES + 
-"precision mediump float;\n"
-"varying vec4 v_Color;\n"
-"varying vec2 TexCoord;\n"
-"\n"
-"uniform sampler2D ourTexture;\n"
-"\n"
-"void main() {\n"
-"    gl_FragColor = v_Color;\n"
-"}\n";
-
-vicmil::GPUProgram create_gpu_program() {
-    return vicmil::GPUProgram::from_strings(vert_shader, frag_shader);
-}
+    "precision mediump float;\n"
+    "varying vec2 v_tex_coord;\n"
+    "varying vec4 v_Color;\n"
+    "uniform sampler2D our_texture;\n"
+    "void main()                                  \n"
+    "{                                            \n"
+    "  gl_FragColor = v_Color;\n"
+    "  if(v_tex_coord.x > 0) {\n"
+    "     gl_FragColor = texture2D(our_texture, v_tex_coord); \n"
+    "     gl_FragColor = vec4(gl_FragColor.x * v_Color.x, gl_FragColor.y * v_Color.y, gl_FragColor.z * v_Color.z, gl_FragColor.w * v_Color.w); \n"
+    "  } \n"
+    "}                                            \n";
 
 struct Triangle {
     // The three corners of the traingle
-    ColorF3PositionF3TextureCoordF2 corners[3];
+    PositionF3TextureCoordF2ColorF3 corner1 = vicmil::PositionF3TextureCoordF2ColorF3(0.0f, 0.5f, 0.0f,   -0.5, 0.0,   1.0, 0.0, 0.0);
+    PositionF3TextureCoordF2ColorF3 corner2 = vicmil::PositionF3TextureCoordF2ColorF3(0.5f, -0.5f, 0.0f,   -1.0, 1.0,  0.0, 1.0, 0.0);
+    PositionF3TextureCoordF2ColorF3 corner3 = vicmil::PositionF3TextureCoordF2ColorF3(-0.5f, -0.5, 0.0f,   -1.0, 1.0,  0.0, 0.0, 1.0);
+
     void set_triangle_color(glm::vec4 color) {
-        for(int i = 0; i < 3; i++) {
-            corners[i].color = ColorF3(color);
-        }
+        corner1.color = ColorF3(color);
+        corner2.color = ColorF3(color);
+        corner3.color = ColorF3(color);
+
+        // Disable texture
+        corner1.texture_coordinate.x = -1.0;
+        corner2.texture_coordinate.x = -1.0;
+        corner3.texture_coordinate.x = -1.0;
     }
-    void set_triangle_position(glm::vec3 p1, glm::dvec3 p2, glm::dvec3 p3) {
-        corners[0].position = PositionF3(p1);
-        corners[1].position = PositionF3(p2);
-        corners[2].position = PositionF3(p3);
+    void set_triangle_3D_position(glm::vec3 p1, glm::dvec3 p2, glm::dvec3 p3) {
+        corner1.position = PositionF3(p1);
+        corner2.position = PositionF3(p2);
+        corner3.position = PositionF3(p3);
     }
-    // Set all the texture coordinates to -1
-    void disable_texture_coord() { 
-        for(int i = 0; i < 3; i++) {
-            corners[i].texture_coordinate.x = -1.0;
-            corners[i].texture_coordinate.y = -1.0;
-        }
+    void set_triangle_2D_position(glm::vec2 p1, glm::dvec2 p2, glm::dvec2 p3) {
+        corner1.position = PositionF3(p1.x, p1.y, 0.0);
+        corner2.position = PositionF3(p2.x, p2.y, 0.0);
+        corner3.position = PositionF3(p3.x, p3.y, 0.0);
     }
-    void set_texture_cord(glm::vec2 p1, glm::dvec2 p2, glm::dvec2 p3) {
-        corners[0].texture_coordinate = TextureCoordF2(p1);
-        corners[1].texture_coordinate = TextureCoordF2(p2);
-        corners[2].texture_coordinate = TextureCoordF2(p3);
+    void set_triangle_2D_position(float x1, float y1, float x2, float y2, float x3, float y3) {
+        // Set the position and leave z axis to 0, since it is 2D
+        corner1.position = PositionF3(x1, y1, 0.0);
+        corner2.position = PositionF3(x2, y2, 0.0);
+        corner3.position = PositionF3(x3, y3, 0.0);
+    }
+    void set_texture_position(glm::vec2 tex_coord1, glm::dvec2 tex_coord2, glm::dvec2 tex_coord3, glm::dvec3 color_mask = glm::dvec3(1.0, 1.0, 1.0)) {
+        corner1.texture_coordinate = TextureCoordF2(tex_coord1);
+        corner2.texture_coordinate = TextureCoordF2(tex_coord2);
+        corner3.texture_coordinate = TextureCoordF2(tex_coord3);
+
+        // Reset color
+        corner1.color = color_mask;
+        corner2.color = color_mask;
+        corner3.color = color_mask;
     }
     static std::vector<VertexBufferElement> get_vertex_buffer_layout() {
-        return ColorF3PositionF3TextureCoordF2::get_vertex_buffer_layout();
+        return PositionF3TextureCoordF2ColorF3::get_vertex_buffer_layout();
     }
-};
-
-// Let everything be made of triangles!
-struct Triangles {
-    std::vector<Triangle> triangles = {};
-    Triangles() {}
-    Triangles(const std::vector<Triangle>& triangles_) {
-        triangles = triangles_;
-    }
-    inline static Triangles merge(const std::vector<Triangles>& triangles_list) {
-        Triangles new_triangles = Triangles();
-        for(int i = 1; i < triangles_list.size(); i++) {
-            new_triangles.triangles.insert(new_triangles.triangles.end(), triangles_list[i].triangles.begin(), triangles_list[i].triangles.end());
-        }
-        return new_triangles;
-    }
-
-    /**
-     * Get the index triangles of the current triangle mapping, 
-     *  the index triangles are just the triangles vertex indicies
-    */
-    std::vector<IndexedTriangleI3> get_index_triangles() {
-        std::vector<IndexedTriangleI3> index_vec = {};
-        index_vec.reserve(triangles.size());
-
-        for(int i = 0; i < triangles.size(); i++) {
-            IndexedTriangleI3 new_triangle = 
-                IndexedTriangleI3(i*3+0,i*3+1,i*3+2);
-            index_vec.push_back(new_triangle);
-        }
-        return index_vec;
-    }
-
-    static std::vector<VertexBufferElement> get_vertex_buffer_layout() {
-        return Triangle::get_vertex_buffer_layout();
+    std::string to_string() {
+        std::string triangle_str;
+        triangle_str += corner1.to_string() + "\n";
+        triangle_str += corner2.to_string() + "\n";
+        triangle_str += corner3.to_string() + "\n";
+        return triangle_str;
     }
 };
 
 /**
  * Create 2 triangles to reprent a rectangle of a specified color
 */
-static Triangles triangles_from_2d_rect(Rect rect, glm::vec4 color) {
+static std::vector<Triangle> triangles_from_2d_color_rect(Rect rect, glm::vec4 color) {
     glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), 0.0); // (0, 0)
     glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), 0.0); // (0, 1)
     glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), 0.0); // (1, 0)
@@ -124,78 +110,109 @@ static Triangles triangles_from_2d_rect(Rect rect, glm::vec4 color) {
 
     Triangle triangle1 = Triangle();
     triangle1.set_triangle_color(color);
-    triangle1.disable_texture_coord();
-    triangle1.set_triangle_position(p1, p2, p4);
+    triangle1.set_triangle_3D_position(p1, p2, p4);
 
     Triangle triangle2 = Triangle();
     triangle2.set_triangle_color(color);
-    triangle2.disable_texture_coord();
-    triangle2.set_triangle_position(p1, p3, p4);
+    triangle2.set_triangle_3D_position(p1, p3, p4);
 
-    Triangles triangls = Triangles();
-    triangls.triangles.push_back(triangle1);
-    triangls.triangles.push_back(triangle2);
-    return triangls;
+    std::vector<Triangle> triangles = {triangle1, triangle2};
+    return triangles;
 }
 
-void overwrite_index_vertex_buffer_pair(IndexVertexBufferPair& buffer_pair, Triangles triangles) {
-    std::vector<IndexedTriangleI3> index_buffer_triangles = triangles.get_index_triangles();
+/**
+ * Create 2 triangles to reprent a rectangle of a specified color
+*/
+static std::vector<Triangle> triangles_from_2d_texture_rect(Rect rect, Rect tex_rect) {
+    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), 0.0); // (0, 0)
+    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), 0.0); // (0, 1)
+    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), 0.0); // (1, 0)
+    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.max_y(), 0.0); // (1, 1)
+
+    glm::vec2 tex_p1 = glm::vec2(tex_rect.min_x(), tex_rect.min_y()); // (0, 0)
+    glm::vec2 tex_p2 = glm::vec2(tex_rect.min_x(), tex_rect.max_y()); // (0, 1)
+    glm::vec2 tex_p3 = glm::vec2(tex_rect.max_x(), tex_rect.min_y()); // (1, 0)
+    glm::vec2 tex_p4 = glm::vec2(tex_rect.max_x(), tex_rect.max_y()); // (1, 1)
+
+    Triangle triangle1 = Triangle();
+    triangle1.set_texture_position(tex_p1, tex_p2, tex_p4);
+    triangle1.set_triangle_3D_position(p1, p2, p4);
+
+    Triangle triangle2 = Triangle();
+    triangle2.set_texture_position(tex_p1, tex_p3, tex_p4);
+    triangle2.set_triangle_3D_position(p1, p3, p4);
+
+    std::vector<Triangle> triangles = {triangle1, triangle2};
+    return triangles;
+}
+
+void overwrite_triangles_in_buffer(IndexVertexBufferPair& buffer_pair, std::vector<Triangle> triangles) {
+    std::vector<IndexedTriangleI3> index_buffer_triangles = IndexedTriangleI3::linear_indexed_triangles(triangles.size());
     buffer_pair.overwrite_data(
-    (void*)(&index_buffer_triangles[0]), 
-    index_buffer_triangles.size() * sizeof(IndexedTriangleI3), 
-    (void*)(&triangles.triangles[0]), 
-    triangles.triangles.size() * sizeof(Triangles));
+        (void*)(&index_buffer_triangles[0]), 
+        index_buffer_triangles.size() * sizeof(IndexedTriangleI3), 
+        (void*)(&triangles[0]), 
+        triangles.size() * sizeof(Triangle)
+    );
 }
-IndexVertexBufferPair create_index_vertex_buffer_pair(Triangles triangles) {
-    std::vector<IndexedTriangleI3> index_buffer_triangles = triangles.get_index_triangles();
+IndexVertexBufferPair create_triangles_buffer(std::vector<Triangle> triangles) {
+    std::vector<IndexedTriangleI3> index_buffer_triangles = IndexedTriangleI3::linear_indexed_triangles(triangles.size());
     IndexVertexBufferPair new_buffer_pair = IndexVertexBufferPair::from_raw_data(
         (void*)(&index_buffer_triangles[0]), 
         index_buffer_triangles.size() * sizeof(IndexedTriangleI3), 
-        (void*)(&triangles.triangles[0]), 
-        triangles.triangles.size() * sizeof(Triangles));
+        (void*)(&triangles[0]), 
+        triangles.size() * sizeof(Triangle)
+    );
 
     return new_buffer_pair;
 }
 
-class GeneralGPUSetup {
-public:
+GPUSetup create_gpu_setup(int width = 1024, int height = 1024) {
     GPUSetup gpu_setup = GPUSetup();
-    void init() {
-        // Setup Window
-        gpu_setup.window_renderer = WindowRendererPair(1000, 1000);
-        create_vertex_array_object();
 
-        // Setup GPU program
-        Debug("Add GPU program settings");
-        gpu_setup.program.program = GPUProgram::from_strings(vert_shader, frag_shader);
-        gpu_setup.program.bind_program();
-        //gpu_setup.program.uniform_mat4f_buffer_vars["u_MVP"] = glm::mat4(1.0); // Set view transform to do nothing
-        //gpu_setup.program.setup_uniform_buffer_variables();
-        
-        // Create a basic index vertex buffer pair with a rectangle in the middle of the screen
-        gpu_setup.index_vertex_buffer = create_index_vertex_buffer_pair(
-            triangles_from_2d_rect(Rect(-0.5, -0.5, 1.0, 1.0), glm::dvec4(1, 0, 0, 1))
-        );
-        gpu_setup.index_vertex_buffer.bind();
-        gpu_setup.vertex_buffer_layout = VertexBufferLayout(Triangles::get_vertex_buffer_layout());
-        gpu_setup.vertex_buffer_layout.set_vertex_buffer_layout();
+    gpu_setup.window_renderer = vicmil::WindowRendererPair(width, height);
+    vicmil::create_vertex_array_object();
 
-        Debug("gpu_setup.setup()");
-        gpu_setup.setup();
-    }
-    void draw() {
-        gpu_setup.draw();
-    }
-    void show_on_screen() {
-        gpu_setup.show_on_screen();
-    }
-    void set_triangles(Triangles triangles) {
-        overwrite_index_vertex_buffer_pair(gpu_setup.index_vertex_buffer, triangles);
-    }
-    void set_view_transform(CameraViewTransform transform) {
-        gpu_setup.program.uniform_mat4f_buffer_vars["u_MVP"] = transform.mat;
-        gpu_setup.program.setup_uniform_buffer_variables();
-    }
-};
+    vicmil::general_gpu_setup::Triangle triangle;
+    vicmil::IndexedTriangleI3 traingle_index = vicmil::IndexedTriangleI3(0, 1, 2);
+
+    gpu_setup.index_vertex_buffer = vicmil::IndexVertexBufferPair::from_raw_data(
+        &traingle_index,
+        1 * sizeof(vicmil::IndexedTriangleI3),
+        &triangle,
+        1 * sizeof(vicmil::general_gpu_setup::Triangle)
+    );
+
+    std::vector<vicmil::VertexBufferElement> layout = vicmil::PositionF3TextureCoordF2ColorF3::get_vertex_buffer_layout();
+    gpu_setup.vertex_buffer_layout = vicmil::VertexBufferLayout(layout);
+    gpu_setup.vertex_buffer_layout.set_vertex_buffer_layout();
+
+    gpu_setup.program.program = vicmil::GPUProgram::from_strings(vicmil::general_gpu_setup::vert_shader, vicmil::general_gpu_setup::frag_shader);
+    gpu_setup.program.program.bind_program();
+
+    vicmil::RawImageRGBA image = vicmil::RawImageRGBA();
+    image.width = 2;
+    image.height = 2;
+    image.pixels.resize(2 * 2);
+    image.pixels[0] = vicmil::PixelRGBA(0, 0, 255, 255);
+    image.pixels[1] = vicmil::PixelRGBA(0, 255, 255, 255);
+    image.pixels[2] = vicmil::PixelRGBA(255, 0, 255, 255);
+    image.pixels[3] = vicmil::PixelRGBA(255, 255, 255, 255);
+
+    gpu_setup.texture = vicmil::GPUTexture::from_raw_image_rgba(image);
+    gpu_setup.texture.bind();
+
+    return gpu_setup;
+}
+void set_triangles(GPUSetup& gpu_setup, std::vector<Triangle> triangles) {
+    overwrite_triangles_in_buffer(gpu_setup.index_vertex_buffer, triangles);
+}
+void set_view_transform(GPUSetup& gpu_setup, CameraViewTransform transform) {
+    gpu_setup.program.uniform_mat4f_buffer_vars["u_MVP"] = transform.mat;
+    gpu_setup.program.setup_uniform_buffer_variables();
+}
+void set_image(GPUSetup& gpu_setup, RawImageRGBA& image) {
+    ThrowNotImplemented();
+}
 }
 }

@@ -13,6 +13,9 @@ namespace vicmil {
 */
 struct CameraViewTransform {
     glm::mat4 mat;
+    CameraViewTransform(glm::mat4 mat_) {
+        mat = mat_;
+    }
 };
 
 class CameraViewTransformGen {

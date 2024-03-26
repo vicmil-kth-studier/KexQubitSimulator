@@ -186,15 +186,31 @@ public:
  *   The indicies refer to the vertex buffer
 */
 struct IndexedTriangleI3 {
-    unsigned int index[3]; // index of triangle corner 1, 2 and 3
+    int index1; // index of triangle corners
+    int index2; // index of triangle corners
+    int index3; // index of triangle corners
     IndexedTriangleI3() {}
     IndexedTriangleI3(unsigned int i1, unsigned int i2, unsigned int i3) {
-        index[0] = i1;
-        index[1] = i2;
-        index[2] = i3;
+        index1 = i1;
+        index2 = i2;
+        index3 = i3;
     }
     static IndexedTriangleI3 from_str(std::string i1, std::string i2, std::string i3) {
         return IndexedTriangleI3(std::stof(i1), std::stof(i2), std::stof(i3));
+    }
+    /**
+     * If we assume that the triangles are laid out linearly in index buffer, eg just one triangle after the other
+     *   Then we can just get the indecies very simply by:
+    */
+    static std::vector<IndexedTriangleI3> linear_indexed_triangles(int triangle_count) {
+        std::vector<IndexedTriangleI3> vec;
+        vec.resize(triangle_count);
+        for(int i = 0; i < triangle_count; i++) {
+            vec[i].index1 = i*3 + 0;
+            vec[i].index2 = i*3 + 1;
+            vec[i].index3 = i*3 + 2;
+        }
+        return vec;
     }
 };
 
