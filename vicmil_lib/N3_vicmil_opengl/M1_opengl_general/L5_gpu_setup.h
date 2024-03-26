@@ -34,9 +34,9 @@ void setup_frag_shader_blending() {
     glEnable(GL_BLEND);
 }
 
-void create_window_and_renderer(int width, int height, SDL_Renderer *renderer, SDL_Window *window) {
+void create_window_and_renderer(int width, int height, SDL_Renderer** renderer, SDL_Window** window) {
     /* Create a windowed mode window and its OpenGL context */
-    SDL_CreateWindowAndRenderer(width, height, SDL_WINDOW_OPENGL, &window, &renderer);
+    SDL_CreateWindowAndRenderer(width, height, SDL_WINDOW_OPENGL, window, renderer);
 
     Debug("OpenGL version " << glGetString(GL_VERSION));
 }
@@ -49,7 +49,7 @@ public:
 
     WindowRendererPair() {}
     WindowRendererPair(int width, int height) {
-        vicmil::create_window_and_renderer(width, height, renderer, window);
+        vicmil::create_window_and_renderer(width, height, &renderer, &window);
     }
     void set_to_current_window() {
         SDL_GL_MakeCurrent(window, gl_context);

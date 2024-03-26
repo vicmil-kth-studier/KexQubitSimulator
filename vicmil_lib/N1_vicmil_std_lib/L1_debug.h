@@ -132,6 +132,8 @@ inline bool match_keywords(const std::string str, const std::vector<std::string>
         } \
     }
 
+}
+
 #ifdef DEBUG_KEYWORDS
     const std::string __debug_keywords_raw__ = DEBUG_KEYWORDS;
 #else
@@ -141,7 +143,7 @@ inline bool match_keywords(const std::string str, const std::vector<std::string>
 const std::vector<std::string> __debug_keywords__ = vicmil::split_string(__debug_keywords_raw__, ',');
 
 
-
+namespace vicmil {
 #ifdef USE_DEBUG
 /**
  * Disables all the logging inside a function

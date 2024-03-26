@@ -28,7 +28,7 @@ static int GLClearErrors() {
  * Detect OpenGL errors both before and after the expression was executed
 */
 #define GLCall(x) \
-if(GLClearErrors() == -1) {ThrowError("Unhandled opengl error before call!");} \
+if(vicmil::GLClearErrors() == -1) {ThrowError("Unhandled opengl error before call!");} \
 x; \
-if(GLClearErrors() == -1) {ThrowError("Opengl call caused error!");}
+if(vicmil::GLClearErrors() == -1) {ThrowError("Opengl call caused error!");}
 }
