@@ -152,6 +152,20 @@ public:
 };
 
 /**
+ * Set a matrix4x4 uniform buffer variable for program
+*/
+static void set_uniform_mat4f(glm::mat4 data, vicmil::GPUProgram& program, std::string shader_variable_name) {
+    int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
+    if (location == -1) {
+        std::cout << "Uniform not found: " << shader_variable_name << std::endl;
+        return;
+    }
+    const unsigned int matrix_count = 1;
+    const char transpose_matrix = GL_FALSE;
+    GLCall(glUniformMatrix4fv(location, matrix_count, transpose_matrix, &data[0][0]));
+}
+
+/**
  * Store the program and all its uniform buffer shader variables in a single data structure!
 */
 class GPUProgramWithUniformBuffer {
@@ -159,16 +173,6 @@ public:
     std::map<std::string, glm::mat4> uniform_mat4f_buffer_vars = {};
     std::map<std::string, glm::vec4> uniform_vec4f_buffer_vars = {};
     GPUProgram program;
-    void set_mat4f_variable(std::string shader_variable_name, glm::mat4 data) {
-        int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
-        if (location == -1) {
-            std::cout << "Uniform not found: " << shader_variable_name << std::endl;
-            return;
-        }
-        const unsigned int matrix_count = 1;
-        const char transpose_matrix = GL_FALSE;
-        GLCall(glUniformMatrix4fv(location, matrix_count, transpose_matrix, &data[0][0]));
-    }
     void set_vec4f_variable(std::string shader_variable_name, glm::vec4 data) {
         int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
         if (location == -1) {
@@ -183,7 +187,7 @@ public:
         {
             auto iter = uniform_mat4f_buffer_vars.begin();
             while(iter != uniform_mat4f_buffer_vars.end()) {
-                set_mat4f_variable((*iter).first, (*iter).second);
+                set_uniform_mat4f((*iter).second, program, (*iter).first);
                 iter++;
             }
         }
