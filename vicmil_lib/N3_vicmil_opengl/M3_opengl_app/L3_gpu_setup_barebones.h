@@ -25,16 +25,16 @@ vicmil::SHADER_VERSON_OPENGL_ES +
 "}\n";
 
 IndexVertexBufferPair create_index_vertex_buffer_pair() {
-    std::vector<float> vertices = {0.0f, 0.5f, 3.0f,
-                0.5f, -0.5f, 3.0f,
-                -0.5f, -0.5f, 3.0f};
+    std::vector<float> vertices = {0.0f, 0.5f,
+                0.5f, -0.5f,
+                -0.5f, -0.5f};
     std::vector<unsigned int> faces = {1, 2, 3};
 
     vicmil::IndexVertexBufferPair new_buffer_pair = vicmil::IndexVertexBufferPair::from_raw_data(
         &faces[0], 
         3*sizeof(unsigned int), 
         &vertices[0],
-        9 * sizeof(float)
+        6 * sizeof(float)
     );
 
     return new_buffer_pair;

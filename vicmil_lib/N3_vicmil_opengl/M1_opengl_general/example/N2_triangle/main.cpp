@@ -13,12 +13,7 @@ void render() {
     assert(GLClearErrors() != -1);
     glClearColor( 1.0f, 0.0f, 1.0f, 1.0f );
     glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
-
-    float vertices[] = {
-     0.0f,  0.5f, // Vertex 1 (X, Y)
-     0.5f, -0.5f, // Vertex 2 (X, Y)
-    -0.5f, -0.5f  // Vertex 3 (X, Y)
-};
+    
 
     SDL_GL_MakeCurrent(window_and_renderer.window, window_and_renderer.gl_context);
     SDL_GL_SwapWindow(window_and_renderer.window);

@@ -1,6 +1,6 @@
 #define USE_DEBUG
 #define DEBUG_KEYWORDS "." 
-#include "../../source/quantum_computer_include.h"
+#include "../../vicmil_opengl_app.h"
 
 using namespace vicmil;
 
@@ -12,8 +12,8 @@ gpu_setup_barebones::BareBonesGPUSetup* gpu_setup;
 
 void init() {
     START_TRACE_FUNCTION();
-    create_vertex_array_object();
     vicmil::init_SDL();
+    create_vertex_array_object();
     gpu_setup = new gpu_setup_barebones::BareBonesGPUSetup();
     Debug("gpu_setup->init()");
     gpu_setup->init();
