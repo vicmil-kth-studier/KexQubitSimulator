@@ -39,7 +39,7 @@ vicmil::SHADER_VERSON_OPENGL_ES +
     "void main()                                  \n"
     "{                                            \n"
     "  gl_FragColor = v_Color;\n"
-    "  if(v_tex_coord.x > 0) {\n"
+    "  if(v_tex_coord.x > 0.0) {\n"
     "     gl_FragColor = texture2D(our_texture, v_tex_coord); \n"
     "     gl_FragColor = vec4(gl_FragColor.x * v_Color.x, gl_FragColor.y * v_Color.y, gl_FragColor.z * v_Color.z, gl_FragColor.w * v_Color.w); \n"
     "  } \n"
@@ -189,6 +189,9 @@ GPUSetup create_gpu_setup(int width = 1024, int height = 1024) {
 
     gpu_setup.program.program = vicmil::GPUProgram::from_strings(vicmil::general_gpu_setup::vert_shader, vicmil::general_gpu_setup::frag_shader);
     gpu_setup.program.program.bind_program();
+
+    // Set the view transform matrix to do nothing
+    vicmil::set_uniform_mat4f(glm::mat4(1.0), gpu_setup.program.program, "u_MVP");
 
     vicmil::RawImageRGBA image = vicmil::RawImageRGBA();
     image.width = 2;

@@ -218,8 +218,8 @@ namespace vicmil {
          * Returns -1 if something went wrong
         */
         // Returns -1 if it failed, otherwise the the instance id
-        int add_subwindow(int window_id, double weight = 1, bool horizontal_windows = false) { // Return the new instance id
-            if(window_id == get_instance_id()) {
+        int add_subwindow(double weight = 1, int window_id = -1, bool horizontal_windows = false) { // Return the new instance id
+            if(window_id == get_instance_id() || window_id == -1) {
                 _subwindows.push_back(WindowLayout());
                 _subwindows.back()._weight = weight;
                 _subwindows.back()._split_window_horizontal = horizontal_windows;
@@ -227,7 +227,7 @@ namespace vicmil {
                 return _subwindows.back().get_instance_id();
             }
             for(int i = 0; i < _subwindows.size(); i++) {
-                int new_instance_id = _subwindows[i].add_subwindow(window_id, weight, horizontal_windows) != -1;
+                int new_instance_id = _subwindows[i].add_subwindow(weight, window_id, horizontal_windows);
                 if(new_instance_id != -1) {
                     return new_instance_id; // Success!
                 }
@@ -250,14 +250,14 @@ namespace vicmil {
             }
             return -1;
         }
-        int set_split_window_horizontal(int window_id, bool split_window_horizontal) {
-            if(window_id == get_instance_id()) {
+        int set_split_window_horizontal(bool split_window_horizontal, int window_id = -1) {
+            if(window_id == get_instance_id() || window_id == -1) {
                 _split_window_horizontal = split_window_horizontal;
                 _update_subwindow_positions();
                 return 0;
             }
             for(int i = 0; i < _subwindows.size(); i++) {
-                if(_subwindows[i].set_split_window_horizontal(window_id, split_window_horizontal) != -1) {
+                if(_subwindows[i].set_split_window_horizontal(split_window_horizontal, window_id) != -1) {
                     return 0; // Success!
                 }
             }
@@ -350,8 +350,8 @@ namespace vicmil {
         WindowLayout layout = WindowLayout();
         layout.set_window_position(0, 0, 1000, 800);
         int64_t master_window = layout.get_instance_id();
-        int64_t control_window = layout.add_subwindow(master_window, 1);
-        int64_t game_view_window = layout.add_subwindow(master_window, 3);
+        int64_t control_window = layout.add_subwindow(1, master_window);
+        int64_t game_view_window = layout.add_subwindow(3, master_window);
         Rect pos;
         layout.get_window_position(control_window, &pos);
         std::cout << "control: " << pos.to_string() << std::endl;
