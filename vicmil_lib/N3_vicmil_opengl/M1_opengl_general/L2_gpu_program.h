@@ -1,5 +1,5 @@
 // Load shader from file and store it in a class
-#include "L1_util.h"
+#include "L1_gl_error.h"
 
 namespace vicmil {
 
@@ -44,17 +44,6 @@ public:
         return new_shader;
     }
     /**
-     * Read a file and create a shader from it
-     * @arg filename: the name or path to the file with the shader source code.
-     * @arg type_: The type of shader as an int, eg GL_FRAGMENT_SHADER or GL_VERTEX_SHADER
-    */
-    static Shader from_file(const std::string& filename, unsigned int type_) {
-        Shader new_shader = Shader();
-        new_shader.raw_content = read_file_contents(filename);
-        new_shader.compile_shader(type_);
-        return new_shader;
-    }
-    /**
      * Compile the shader using the source code, this will generate a new shader instance on the GPU
     */
     void compile_shader(unsigned int shader_type) {
@@ -92,11 +81,6 @@ public:
         new_shader.shader = Shader::from_str(str_, GL_VERTEX_SHADER);
         return new_shader;
     }
-    static VertexShader from_file(const std::string& filename) {
-        VertexShader new_shader = VertexShader();
-        new_shader.shader = Shader::from_file(filename, GL_VERTEX_SHADER);
-        return new_shader;
-    }
     VertexShader() {}
 };
 
@@ -109,11 +93,6 @@ public:
     static FragmentShader from_str(const std::string& str_) {
         FragmentShader new_shader = FragmentShader();
         new_shader.shader = Shader::from_str(str_, GL_FRAGMENT_SHADER);
-        return new_shader;
-    }
-    static FragmentShader from_file(const std::string& filename) {
-        FragmentShader new_shader = FragmentShader();
-        new_shader.shader = Shader::from_file(filename, GL_FRAGMENT_SHADER);
         return new_shader;
     }
     FragmentShader() {}
@@ -131,15 +110,6 @@ public:
         new_program.id = glCreateProgram();
         VertexShader vert_shader = VertexShader::from_str(vert_str);
         FragmentShader frag_shader = FragmentShader::from_str(frag_str);
-        new_program._attach_shaders(vert_shader, frag_shader);
-        new_program._delete_shaders(vert_shader, frag_shader); // The shaders are already linked and are therefore not needed
-        return new_program;
-    }
-    static GPUProgram from_files(const std::string& vert_filename, const std::string& frag_filename) {
-        GPUProgram new_program = GPUProgram();
-        new_program.id = glCreateProgram();
-        VertexShader  vert_shader = VertexShader::from_file(vert_filename);
-        FragmentShader frag_shader = FragmentShader::from_file(frag_filename);
         new_program._attach_shaders(vert_shader, frag_shader);
         new_program._delete_shaders(vert_shader, frag_shader); // The shaders are already linked and are therefore not needed
         return new_program;
@@ -181,17 +151,77 @@ public:
     ~GPUProgram() {}
 };
 
-namespace shader_example {
+/**
+ * Store the program and all its uniform buffer shader variables in a single data structure!
+*/
+class GPUProgramWithUniformBuffer {
+public:
+    std::map<std::string, glm::mat4> uniform_mat4f_buffer_vars = {};
+    std::map<std::string, glm::vec4> uniform_vec4f_buffer_vars = {};
+    GPUProgram program;
+    void set_mat4f_variable(std::string shader_variable_name, glm::mat4 data) {
+        int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
+        if (location == -1) {
+            std::cout << "Uniform not found: " << shader_variable_name << std::endl;
+            return;
+        }
+        const unsigned int matrix_count = 1;
+        const char transpose_matrix = GL_FALSE;
+        GLCall(glUniformMatrix4fv(location, matrix_count, transpose_matrix, &data[0][0]));
+    }
+    void set_vec4f_variable(std::string shader_variable_name, glm::vec4 data) {
+        int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
+        if (location == -1) {
+            std::cout << "Uniform not found: " << shader_variable_name << std::endl;
+            return;
+        }
+        const unsigned int matrix_count = 1;
+        const char transpose_matrix = GL_FALSE;
+        GLCall(glUniform4f(location, data[0], data[1], data[2], data[3]););
+    }
+    void setup_uniform_buffer_variables() {
+        {
+            auto iter = uniform_mat4f_buffer_vars.begin();
+            while(iter != uniform_mat4f_buffer_vars.end()) {
+                set_mat4f_variable((*iter).first, (*iter).second);
+                iter++;
+            }
+        }
+        {
+            auto iter = uniform_vec4f_buffer_vars.begin();
+            while(iter != uniform_vec4f_buffer_vars.end()) {
+                set_vec4f_variable((*iter).first, (*iter).second);
+                iter++;
+            }
+        }
+    }
+    void bind_program() {
+        program.bind_program();
+    }
+    void bind_and_setup_shader_variables() {
+        bind_program();
+        setup_uniform_buffer_variables();
+    }
+};
 
+#ifdef __EMSCRIPTEN__
 /**
  * For the shader programs to work we need to specify which version of shader we should use
  *   the OPENGL_ES shader version seems to be very universal, and can be run both in
  *   the browser and locally in an application program, so I would recommend using that
+ * 
+ *   Put on the first line of the shader!
 */
-#ifdef __EMSCRIPTEN__
-const std::string OPENGL_ES_VERSON = ""; // Emscripten runs OpenGL ES by default
+const std::string SHADER_VERSON_OPENGL_ES = ""; // Emscripten runs OpenGL ES by default
 #else
-const std::string OPENGL_ES_VERSON = "#version 130\n";
+/**
+ * For the shader programs to work we need to specify which version of shader we should use
+ *   the OPENGL_ES shader version seems to be very universal, and can be run both in
+ *   the browser and locally in an application program, so I would recommend using that
+ * 
+ *   Put on the first line of the shader!
+*/
+const std::string SHADER_VERSON_OPENGL_ES = "#version 130\n";
 #endif
 
 /** OpenGL ES terminology:
@@ -199,53 +229,4 @@ const std::string OPENGL_ES_VERSON = "#version 130\n";
  *    attribute: input variable, it is specific for every vertex(triangle corner)
  *    varying: output variable that will be passed to the fragment shader
 */
-
-/**
- * This is an example of a vertex-fragment shader pair that can be used for many things, 
- *   more specialized shaders can use less memory, be faster, or do more advanced things
- *   but this is a one size fits all solution that can do most basic things in both 2D and 3D such as
- *   - Drawing textures
- *   - Drawing triangles
- *   - Drawing text
- *   - Drawing models
- *   - Handle camera perspecitives and rotations
- * 
- *  NOTE: No fancy shading or lighting
- *  NOTE: You need to configure the GPU correctly for everything to work! (see examples in later files)
-*/
-const std::string vert_shader_example =
-OPENGL_ES_VERSON +
-"uniform mat4 u_MVP;\n"       // model view matrix (MVP) is a matrix that will be applied to all vertecies, 
-                              // can contain things like rotations or translations(moving objects in space)
-"attribute vec3 position;\n"  // The position of the vertex(triangle corner)
-"attribute vec4 color;\n"     // The color of the vertex(triangle corner)
-"attribute vec2 aTexCoord;\n" // The coordinate on the texture the vertex maps to
-                              // (if x corordinate is negative I treat it as it doesn't map to any texture)
-"\n"
-"varying vec4 v_Color;\n"    
-"varying vec2 TexCoord;\n"   
-"\n"
-"void main() {\n"            
-"    gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-"    v_Color = vec4(color.x, color.y, color.z, 1.0);\n"
-"    TexCoord = aTexCoord;\n"
-"}\n";
-
-const std::string frag_shader_example =
-OPENGL_ES_VERSON +
-"precision mediump float;\n"
-"varying vec4 v_Color;\n"
-"varying vec2 TexCoord;\n"
-"\n"
-"uniform sampler2D ourTexture;\n"
-"\n"
-"void main() {\n"
-"    if(TexCoord.x < 0.0) {\n"
-"        gl_FragColor = v_Color;\n"
-"    }\n"
-"    else {\n"
-"       gl_FragColor = texture2D(ourTexture, TexCoord);\n"
-"    }\n"
-"}\n";
-}
 }

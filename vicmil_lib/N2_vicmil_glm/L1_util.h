@@ -228,4 +228,83 @@ int get_lowest_point_along_axis(std::vector<glm::dvec3> points, glm::dvec3 axis)
     }
     return min_point_index;
 }
+
+class Rotation {
+public:
+    glm::dquat quaternion;
+    inline static Rotation from_quaternion(glm::dquat quaternion_) {
+        Rotation new_rotation = Rotation();
+        new_rotation.quaternion = quaternion_;
+        return new_rotation;
+    }
+    inline static Rotation from_axis_rotation(const double radians, const glm::dvec3 axis) {
+        double sin_rad = std::sin(radians/2);
+        double cos_rad = std::cos(radians/2);
+        glm::dvec3 normalized_axis = glm::normalize(axis);
+
+        glm::dquat new_quaternion = glm::dquat();
+        new_quaternion.w = cos_rad;
+        new_quaternion.x = normalized_axis[0] * sin_rad;
+        new_quaternion.y = normalized_axis[1] * sin_rad;
+        new_quaternion.z = normalized_axis[2] * sin_rad;
+        return Rotation::from_quaternion(new_quaternion);
+    }
+    // The length of the axis is the radians, the direction is the axis of rotation
+    inline static Rotation from_scaled_axis(const glm::dvec3 scaled_axis) {
+        double radians = glm::length(scaled_axis);
+        if(glm::length(scaled_axis) != 0) {
+            return from_axis_rotation(radians, scaled_axis);
+        }
+        else {
+            glm::dquat new_quaternion = glm::dquat();
+            new_quaternion.w = 1.0;
+            new_quaternion.x = 0;
+            new_quaternion.y = 0;
+            new_quaternion.z = 0;
+            return Rotation::from_quaternion(new_quaternion);
+        }
+    }
+    inline static Rotation from_rotation_of_vectors(const glm::dvec3 vec_from, const glm::dvec3 vec_to) {
+        // Vectors must be normalized!
+        Assert(abs(glm::length(vec_from) - 1) < 0.0001);
+        Assert(abs(glm::length(vec_to) - 1) < 0.0001);
+        if(vec_from == vec_to) {
+            return Rotation();
+        }
+        glm::dvec3 rotation_axis = glm::cross(vec_from, vec_to);
+        if(glm::length(rotation_axis) == 0) {
+            // 180 degree rotation, any direction that is orthogonal
+            glm::dvec3 rotation_axis = glm::cross(glm::dvec3(vec_from.y, vec_from.x, vec_from.z), vec_from);
+            return Rotation::from_axis_rotation(vicmil::PI, glm::normalize(rotation_axis));
+        }
+
+        // Determine how many degrees to rotate
+        double cos_ = glm::dot(vec_from, vec_to);
+        double rads = std::acos(cos_);
+        return Rotation::from_axis_rotation(rads, rotation_axis);
+    }
+    Rotation rotate(const Rotation& other) const {
+        return Rotation::from_quaternion(other.quaternion * this->quaternion);
+    }
+    Rotation inverse() const {
+        return Rotation::from_quaternion(glm::inverse(this->quaternion));
+    }
+    std::string to_axis_rotation_str() const {
+        double radians = std::acos(this->quaternion.w);
+        glm::dvec3 direction = glm::dvec3(this->quaternion.x, this->quaternion.y, this->quaternion.z);
+        return std::to_string(vicmil::radians_to_degrees(radians)) + "deg, " + glm::to_string(glm::normalize(direction));
+    }
+    inline glm::dvec3 rotate_vector(const glm::dvec3& vec) const {
+        return to_matrix3x3()*vec;
+    }
+    inline glm::dvec3 inverse_rotate_vector(const glm::dvec3& vec) const {
+        return glm::inverse(to_matrix3x3())*vec;
+    }
+    inline glm::dmat4x4 to_matrix4x4() const {
+        return glm::dmat4x4(quaternion);
+    }
+    inline glm::dmat3x3 to_matrix3x3() const {
+        return glm::dmat3x3(quaternion);
+    }
+};
 }

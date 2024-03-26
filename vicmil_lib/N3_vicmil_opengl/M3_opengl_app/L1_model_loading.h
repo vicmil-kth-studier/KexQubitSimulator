@@ -1,93 +1,60 @@
 /*
 Load .obj and .mtl files
 */ 
-#include "L5_texture.h"
-#include <map>
+#include "../M2_resources/vicmil_opengl_resources.h"
 
 namespace vicmil {
-struct FVec3 {
-public:
-    float v[3]; // x, y, z
-    static FVec3 from_str(std::string v1, std::string v2, std::string v3) {
-        FVec3 new_vec;
-        new_vec.v[0] = std::stof(v1);
-        new_vec.v[1] = std::stof(v2);
-        new_vec.v[2] = std::stof(v3);
-        return new_vec;
-    }
-};
-
-struct FVec2 {
-    float v[2]; // x, y, z
-    static FVec2 from_str(std::string v1, std::string v2) {
-        FVec2 new_vec;
-        new_vec.v[0] = std::stof(v1);
-        new_vec.v[1] = std::stof(v2);
-        return new_vec;
-    }
-};
-
-struct IVec3 {
-    int v[3];
-    static IVec3 from_str(std::string v1, std::string v2, std::string v3) {
-        IVec3 new_vec;
-        new_vec.v[0] = std::stoi(v1);
-        new_vec.v[1] = std::stoi(v2);
-        new_vec.v[2] = std::stoi(v3);
-        return new_vec;
-    }
-};
 
 struct Vertex {
-    FVec3 v;
+    PositionF3 v;
     static Vertex from_obj_file_line(std::vector<std::string> args) {
         expect_vec_length(args, 4, "[Parse Error] [Wrong number of args]");
         Vertex new_vertex;
-        new_vertex.v = FVec3::from_str(args[1], args[2], args[3]);
+        new_vertex.v = PositionF3::from_str(args[1], args[2], args[3]);
         return new_vertex;
     }
 };
 
 struct TextureCoordinate {
-    FVec2 v;
+    TextureCoordF2 v;
     static TextureCoordinate from_obj_file_line(std::vector<std::string> args) {
         expect_vec_length(args, 3, "[Parse Error] [Wrong number of args]");
         TextureCoordinate new_tex_coord;
-        new_tex_coord.v = FVec2::from_str(args[1], args[2]);
+        new_tex_coord.v = TextureCoordF2::from_str(args[1], args[2]);
         return new_tex_coord;
     }
 };
 
 struct Normal {
-    FVec3 v;
+    NormalF3 v;
     static Normal from_obj_file_line(std::vector<std::string> args) {
         expect_vec_length(args, 4, "[Parse Error] [Wrong number of args]");
         Normal new_normal;
-        new_normal.v = FVec3::from_str(args[1], args[2], args[3]);
+        new_normal.v = NormalF3::from_str(args[1], args[2], args[3]);
         return new_normal;
     }
 };
 
 struct Surface {
-    IVec3 vertex_index;
-    IVec3 tex_coordinate_index; // Defaults to 0
-    IVec3 normal_index;
+    IndexedTriangleI3 vertex_index;
+    IndexedTriangleI3 tex_coordinate_index; // Defaults to 0
+    IndexedTriangleI3 normal_index;
     static Surface from_obj_file_line(std::vector<std::string> args) {
         expect_vec_length(args, 16, "[Parse Error] [Wrong number of args]");
         Surface new_surface;
-        new_surface.vertex_index =         IVec3::from_str(args[1], args[1+5], args[1+5*2]);
-        new_surface.tex_coordinate_index = IVec3::from_str(args[3], args[3+5], args[3+5*2]);
-        new_surface.normal_index =         IVec3::from_str(args[5], args[5+5], args[5+5*2]);
+        new_surface.vertex_index =         IndexedTriangleI3::from_str(args[1], args[1+5], args[1+5*2]);
+        new_surface.tex_coordinate_index = IndexedTriangleI3::from_str(args[3], args[3+5], args[3+5*2]);
+        new_surface.normal_index =         IndexedTriangleI3::from_str(args[5], args[5+5], args[5+5*2]);
         return new_surface;
     }
 };
 
 struct Color {
-    FVec3 v; // [r, g, b], values between 0.0 - 1.0
+    ColorF3 v; // [r, g, b], values between 0.0 - 1.0
     static Color from_obj_file_line(std::vector<std::string> args) {
         expect_vec_length(args, 4, "[Parse Error] [Wrong number of args]");
         Color new_color;
-        new_color.v = FVec3::from_str(args[1], args[2], args[3]);
+        new_color.v = ColorF3::from_str(args[1], args[2], args[3]);
         return new_color;
     }
 };
@@ -300,10 +267,10 @@ class ModelsInfo {
                 Debug("new surface");
                 Surface& surface = surfaces[i2];
 
-                Debug("color: (" << material.color.v.v[0] << ", " << material.color.v.v[1] << ", " << material.color.v.v[2] << ")"); 
+                Debug("color: (" << material.color.v.r << ", " << material.color.v.g << ", " << material.color.v.b << ")"); 
                 for(int i3 = 0; i3 < 3; i3++) {
-                    Vertex& vertex = this->obj_file_contents.verticies[surface.vertex_index.v[i3]];
-                    Debug("vertex: (" << vertex.v.v[0] << ", " << vertex.v.v[1] << ", " << vertex.v.v[2] << ")"); 
+                    Vertex& vertex = this->obj_file_contents.verticies[surface.vertex_index.index[i3]];
+                    Debug("vertex: (" << vertex.v.x << ", " << vertex.v.y << ", " << vertex.v.z << ")"); 
                 }
 
                 Debug("");

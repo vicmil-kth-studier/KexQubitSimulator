@@ -1,5 +1,5 @@
 import sys; from pathlib import Path; 
-sys.path.append(str(Path(__file__).resolve().parents[2])) 
+sys.path.append(str(Path(__file__).resolve().parents[3])) 
 
 import N3_vicmil_opengl as build
 

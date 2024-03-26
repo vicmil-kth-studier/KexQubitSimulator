@@ -1,6 +1,7 @@
 #pragma once
-#include "../N2_vicmil_glm/vicmil_glm.h"
+#include "../../N2_vicmil_glm/vicmil_glm.h"
 
+// Include all graphing library headers (SDL & OpenGL)
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #define GL_GLEXT_PROTOTYPES 1

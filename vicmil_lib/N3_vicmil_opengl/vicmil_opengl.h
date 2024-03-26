@@ -1,13 +1,11 @@
 #pragma once
 
-/*#ifdef USE_DEBUG
-#define USE_DEBUG_TMP
-#undef USE_DEBUG
-#endif*/
 
-#include "L11_app.h"
-
-/*#ifdef USE_DEBUG_TMP
-#define USE_DEBUG
-#undef USE_DEBUG_TMP
-#endif*/
+// Ensure debug is disabled when including from outside
+//#ifdef USE_DEBUG
+//    #undef USE_DEBUG
+    #include "M3_opengl_app/vicmil_opengl_app.h"
+//    #define USE_DEBUG
+//#else
+//    #include "M2_opengl_app/vicmil_opengl_app.h"
+//#endif

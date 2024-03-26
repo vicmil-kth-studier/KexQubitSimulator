@@ -1,17 +1,7 @@
 #pragma once
-#include "L2_shader.h"
+#include "L2_gpu_program.h"
 
 namespace vicmil {
-/**
- * Create a vertex array object, there usually have to exist one of those for the program to work!
-*/
-GLuint create_vertex_array_object() {
-    GLuint vao;
-    glGenVertexArraysOES(1, &vao);
-    glBindVertexArrayOES(vao);
-    return vao;
-}
-
 class GLBuffer {
 public:
     unsigned int buffer_id;
@@ -84,38 +74,6 @@ public:
     }
 };
 
-class UniformBuffer {
-public:
-    static void set_4f(std::vector<float> data, GPUProgram& program, std::string shader_variable_name) {
-        if (data.size() != 4) {
-            std::cout << "Wrong uniform buffer size" << std::endl;
-            throw;
-        }
-        int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
-        if (location == -1) {
-            std::cout << "Uniform not found" << std::endl;
-            throw;
-        }
-        glUniform4f(location, data[0], data[1], data[2], data[3]);
-    }
-    /**
-     * Set the data in a uniform buffer to a 4x4 matrix
-     * 
-     * @arg data: The data you want to put in the buffer, 4x4 matrix
-     * @arg program: The GPU program, it contains information about the uniform variable
-     * @arg shader_variable_name: the name of the uniform buffer variable in the program
-    */
-    static void set_mat4f(glm::mat4 data, GPUProgram& program, std::string shader_variable_name) {
-        int location = glGetUniformLocation(program.id, shader_variable_name.c_str());
-        if (location == -1) {
-            std::cout << "Uniform not found: " << shader_variable_name << std::endl;
-            return;
-        }
-        const unsigned int matrix_count = 1;
-        const char transpose_matrix = GL_FALSE;
-        GLCall(glUniformMatrix4fv(location, matrix_count, transpose_matrix, &data[0][0]));
-    }
-};
 
 class VertexBufferElement {
 public:
@@ -146,10 +104,8 @@ class VertexBufferLayout {
 public:
     std::vector<VertexBufferElement> buffer_elements;
     VertexBufferLayout() {}
-    static VertexBufferLayout from_elements(std::vector<VertexBufferElement> buffer_elements_) {
-        VertexBufferLayout new_layout = VertexBufferLayout();
-        new_layout.buffer_elements = buffer_elements_;
-        return new_layout;
+    VertexBufferLayout(std::vector<VertexBufferElement> buffer_elements_) {
+        buffer_elements = buffer_elements_;
     }
     unsigned int get_size() {
         int size_ = 0;
@@ -198,16 +154,6 @@ public:
         vertex_buffer.overwrite_buffer_data(vertex_data_byte_size, vertex_data);
         index_buffer.overwrite_buffer_data(index_data_byte_size, index_data);
     }
-    // Set the buffer layout to follow the shader example specified in L2_shader.h
-    static void set_vertex_buffer_layout_to_example() {
-        std::vector<VertexBufferElement> elements = {
-            VertexBufferElement::create_element(GL_FLOAT, 3),
-            VertexBufferElement::create_element(GL_FLOAT, 4),
-            VertexBufferElement::create_element(GL_FLOAT, 2)
-        };
-        VertexBufferLayout layout = VertexBufferLayout::from_elements(elements);
-        layout.set_vertex_buffer_layout();
-    }
     /**
      * Bind the vertex and index buffers on the GPU. This means that it 
      *  is these buffers the GPU refers to until another buffer calls bind()
@@ -224,6 +170,7 @@ public:
      *    a part of the buffer, otherwise just leave it
     */
     void draw(int triangle_count=-1, unsigned int offset_in_bytes=0) {
+        DisableLogging;
         if(triangle_count > 0) {
             GLCall(glDrawElements(GL_TRIANGLES, triangle_count * 3, GL_UNSIGNED_INT, reinterpret_cast<const void*>(offset_in_bytes)));
         }
@@ -233,4 +180,23 @@ public:
         }
     }
 };
+
+/**
+ * The index buffer is made up of a list of triangles, this can be one of them
+ *   The indicies refer to the vertex buffer
+*/
+struct IndexedTriangleI3 {
+    unsigned int index[3]; // index of triangle corner 1, 2 and 3
+    IndexedTriangleI3() {}
+    IndexedTriangleI3(unsigned int i1, unsigned int i2, unsigned int i3) {
+        index[0] = i1;
+        index[1] = i2;
+        index[2] = i3;
+    }
+    static IndexedTriangleI3 from_str(std::string i1, std::string i2, std::string i3) {
+        return IndexedTriangleI3(std::stof(i1), std::stof(i2), std::stof(i3));
+    }
+};
+
+
 }

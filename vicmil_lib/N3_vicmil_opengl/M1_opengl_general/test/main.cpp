@@ -1,6 +1,6 @@
 #define USE_DEBUG
 #define DEBUG_KEYWORDS ".,!vicmil_std_lib" 
-#include "../vicmil_opengl.h"
+#include "../vicmil_opengl_general.h"
 
 int main() {
     std::cout << "Starting!" << std::endl;

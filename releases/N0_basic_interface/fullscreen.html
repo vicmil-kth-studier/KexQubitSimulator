@@ -1,0 +1,106 @@
+<html>
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!-- a comment in html -->
+<style> 
+    canvas.emscripten { 
+        margin: 0;
+        height: 100%; 
+        width: 100%;
+        overflow: hidden
+    }
+    #loadingDiv {
+        text-align: center;
+    }
+</style>
+    </head>
+
+    <body>
+      <div id="loadingDiv">The owl is loading...</div>
+      <canvas class="emscripten" id="canvas" style='position:absolute; left:0px; top:0px;' oncontextmenu="event.preventDefault()"></canvas>
+      <div style="width:200px; margin-left:auto; margin-right:auto">
+      </div>
+
+
+
+    <script type='text/javascript'>
+        var Module = {
+            onRuntimeInitialized: function() {
+                var e = document.getElementById('loadingDiv');
+                e.style.visibility = 'hidden';
+                console.log("runtime initialized!");
+
+                // Try update screen multiple times(if the program has not fully loaded yet)
+                update_cpp_screen_size();
+                setTimeout(function() { update_cpp_screen_size(); }, 2000);
+                setTimeout(function() { update_cpp_screen_size(); }, 5000);
+            }, 
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                return canvas;
+                })()
+        };
+        var update_cpp_screen_size = function() {
+            console.log("update_cpp_screen_size");
+            // Call C from JavaScript
+            var result = Module.ccall('set_screen_size', // name of C function
+            'number', // return type
+            ['number', 'number'], // argument types
+            [window.innerWidth, window.innerHeight]); // arguments
+
+            // result is 0
+            console.log("result: ");
+            console.log(result);
+        }
+
+        var test_cpp_sqrt = function() {
+            console.log("test_cpp_sqrt");
+            // Call C from JavaScript
+            var result = Module.ccall('int_sqrt', // name of C function
+            'number', // return type
+            ['number'], // argument types
+            [28]); // arguments
+
+            // result is 5
+            console.log("result: ");
+            console.log(result);
+        };
+
+        var start_function = function(o) {
+            o.style.visibility = "hidden";
+            Module.ccall('mainf', null, null);
+            test_cpp_sqrt();
+        };
+
+        console.log("print line 60");
+
+        // Update screen size in c++ each time window changes size
+        addEventListener("resize", (event) => {update_cpp_screen_size();});
+
+    </script>
+    <script>
+
+          (function() {
+            var memoryInitializer = 'run.js.mem';
+            if (typeof Module['locateFile'] === 'function') {
+              memoryInitializer = Module['locateFile'](memoryInitializer);
+            } else if (Module['memoryInitializerPrefixURL']) {
+              memoryInitializer = Module['memoryInitializerPrefixURL'] + memoryInitializer;
+            }
+            var xhr = Module['memoryInitializerRequest'] = new XMLHttpRequest();
+            xhr.open('GET', memoryInitializer, true);
+            xhr.responseType = 'arraybuffer';
+            xhr.send(null);
+          })();
+
+          var script = document.createElement('script');
+          script.src = "run.js";
+          document.body.appendChild(script);
+
+          
+
+</script>
+
+    </body>
+</html>

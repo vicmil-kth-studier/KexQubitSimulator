@@ -58,9 +58,6 @@ extern "C" {
     int set_screen_size(double width, double height) {
         vicmil::browser::window_width = width;
         vicmil::browser::window_height = height;
-        if(vicmil::app::globals::main_app != nullptr) {
-            vicmil::app::globals::main_app->graphics_setup.custom_screen_aspect_ratio = width / height;
-        }
         return 0;
     }
 }
