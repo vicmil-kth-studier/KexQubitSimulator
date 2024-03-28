@@ -10,7 +10,8 @@ const double PI  = 3.141592653589793238463;
  * Determine if a value is in range
  * Returns true if min_v <= v <= max_v
 */
-inline bool in_range(int v, int min_v, int max_v) {
+template<class T>
+inline bool in_range(T v, T min_v, T max_v) {
     if(v < min_v) {
         return false;
     }
