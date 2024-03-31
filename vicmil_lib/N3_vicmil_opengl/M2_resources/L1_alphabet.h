@@ -6,7 +6,7 @@ namespace __alphabet__ {
     const int LETTER_WIDTH = 5;
     const int LETTER_HEIGHT = 9;
     const int LETTER_SPACING = 1; // Add one pixel of letter spacing when drawing
-    const std::string A = 
+    const std::string letter_A = 
     ".00.."
     "0..0."
     "0..0."
@@ -16,7 +16,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string B = 
+    const std::string letter_B = 
     "000.."
     "0..0."
     "0..0."
@@ -26,7 +26,7 @@ namespace __alphabet__ {
     "000.."
     "....."
     ".....";
-    const std::string C = 
+    const std::string letter_C = 
     ".00.."
     "0..0."
     "0...."
@@ -36,7 +36,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string D = 
+    const std::string letter_D = 
     "000.."
     "0..0."
     "0..0."
@@ -46,7 +46,7 @@ namespace __alphabet__ {
     "000.."
     "....."
     ".....";
-    const std::string E = 
+    const std::string letter_E = 
     "0000."
     "0...."
     "0...."
@@ -56,7 +56,7 @@ namespace __alphabet__ {
     "0000."
     "....."
     ".....";
-    const std::string F = 
+    const std::string letter_F = 
     "0000."
     "0...."
     "0...."
@@ -66,7 +66,7 @@ namespace __alphabet__ {
     "0...."
     "....."
     ".....";
-    const std::string G = 
+    const std::string letter_G = 
     ".00.."
     "0..0."
     "0...."
@@ -76,7 +76,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string H = 
+    const std::string letter_H = 
     "0..0."
     "0..0."
     "0..0."
@@ -86,7 +86,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string I_ = 
+    const std::string letter_I = 
     ".000."
     "..0.."
     "..0.."
@@ -96,7 +96,7 @@ namespace __alphabet__ {
     ".000."
     "....."
     ".....";
-    const std::string J = 
+    const std::string letter_J = 
     "...0."
     "...0."
     "...0."
@@ -106,7 +106,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string K = 
+    const std::string letter_K = 
     "0..0."
     "0..0."
     "0.0.."
@@ -116,7 +116,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string L = 
+    const std::string letter_L = 
     ".0..."
     ".0..."
     ".0..."
@@ -126,7 +126,7 @@ namespace __alphabet__ {
     ".0000"
     "....."
     ".....";
-    const std::string M = 
+    const std::string letter_M = 
     "0...0"
     "00.00"
     "0.0.0"
@@ -136,7 +136,7 @@ namespace __alphabet__ {
     "0...0"
     "....."
     ".....";
-    const std::string N_ = 
+    const std::string letter_N = 
     "0..0."
     "0..0."
     "00.0."
@@ -146,7 +146,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string O = 
+    const std::string letter_O = 
     ".00.."
     "0..0."
     "0..0."
@@ -156,7 +156,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string P = 
+    const std::string letter_P = 
     "000.."
     "0..0."
     "0..0."
@@ -166,7 +166,7 @@ namespace __alphabet__ {
     "0...."
     "....."
     ".....";
-    const std::string Q = 
+    const std::string letter_Q = 
     ".00.."
     "0..0."
     "0..0."
@@ -176,7 +176,7 @@ namespace __alphabet__ {
     ".0.0."
     "....."
     ".....";
-    const std::string R = 
+    const std::string letter_R = 
     "000.."
     "0..0."
     "0..0."
@@ -186,7 +186,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string S = 
+    const std::string letter_S = 
     ".00.."
     "0..0."
     "0...."
@@ -196,7 +196,7 @@ namespace __alphabet__ {
     "000.."
     "....."
     ".....";
-    const std::string T = 
+    const std::string letter_T = 
     "00000"
     "..0.."
     "..0.."
@@ -206,7 +206,7 @@ namespace __alphabet__ {
     "..0.."
     "....."
     ".....";
-    const std::string U = 
+    const std::string letter_U = 
     "0..0."
     "0..0."
     "0..0."
@@ -216,7 +216,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string V = 
+    const std::string letter_V = 
     "0...0"
     "0...0"
     "0...0"
@@ -226,7 +226,7 @@ namespace __alphabet__ {
     "..0.."
     "....."
     ".....";
-    const std::string W = 
+    const std::string letter_W = 
     "0...0"
     "0...0"
     "0...0"
@@ -236,7 +236,7 @@ namespace __alphabet__ {
     ".0.0."
     "....."
     ".....";
-    const std::string X = 
+    const std::string letter_X = 
     "0..0."
     "0..0."
     "0..0."
@@ -246,7 +246,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string Y = 
+    const std::string letter_Y = 
     "0..0."
     "0..0."
     "0..0."
@@ -256,7 +256,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string Z = 
+    const std::string letter_Z = 
     "0000."
     "...0."
     "...0."
@@ -267,7 +267,7 @@ namespace __alphabet__ {
     "....."
     ".....";
 
-    const std::string a = 
+    const std::string letter_a = 
     "....."
     "....."
     ".00.."
@@ -277,7 +277,7 @@ namespace __alphabet__ {
     ".000."
     "....."
     ".....";
-    const std::string b = 
+    const std::string letter_b = 
     "0...."
     "0...."
     "0...."
@@ -287,7 +287,7 @@ namespace __alphabet__ {
     "000.."
     "....."
     ".....";
-    const std::string c = 
+    const std::string letter_c = 
     "....."
     "....."
     ".00.."
@@ -297,7 +297,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string d = 
+    const std::string letter_d = 
     "...0."
     "...0."
     "...0."
@@ -307,7 +307,7 @@ namespace __alphabet__ {
     ".000."
     "....."
     ".....";
-    const std::string e = 
+    const std::string letter_e = 
     "....."
     "....."
     ".00.."
@@ -317,7 +317,7 @@ namespace __alphabet__ {
     ".000."
     "....."
     ".....";
-    const std::string f = 
+    const std::string letter_f = 
     ".00.."
     "0..0."
     "0...."
@@ -327,7 +327,7 @@ namespace __alphabet__ {
     "0...."
     "....."
     ".....";
-    const std::string g = 
+    const std::string letter_g = 
     "....."
     "....."
     ".000."
@@ -337,7 +337,7 @@ namespace __alphabet__ {
     "...0."
     "...0."
     ".00..";
-    const std::string h = 
+    const std::string letter_h = 
     "0...."
     "0...."
     "0...."
@@ -347,7 +347,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string i = 
+    const std::string letter_i = 
     "..0.."
     "....."
     "....."
@@ -357,7 +357,7 @@ namespace __alphabet__ {
     "..0.."
     "....."
     ".....";
-    const std::string j = 
+    const std::string letter_j = 
     "...0."
     "....."
     "....."
@@ -367,7 +367,7 @@ namespace __alphabet__ {
     ".0.0."
     "..0.."
     ".....";
-    const std::string k = 
+    const std::string letter_k = 
     "0...."
     "0..0."
     "0..0."
@@ -377,7 +377,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string l = 
+    const std::string letter_l = 
     ".0..."
     ".0..."
     ".0..."
@@ -387,7 +387,7 @@ namespace __alphabet__ {
     "..0.."
     "....."
     ".....";
-    const std::string m = 
+    const std::string letter_m = 
     "....."
     "....."
     "0000."
@@ -397,7 +397,7 @@ namespace __alphabet__ {
     "0.0.0"
     "....."
     ".....";
-    const std::string n = 
+    const std::string letter_n = 
     "....."
     "....."
     "000.."
@@ -407,7 +407,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string o = 
+    const std::string letter_o = 
     "....."
     "....."
     ".00.."
@@ -417,7 +417,7 @@ namespace __alphabet__ {
     ".00.."
     "....."
     ".....";
-    const std::string p = 
+    const std::string letter_p = 
     "....."
     "....."
     ".00.."
@@ -427,7 +427,7 @@ namespace __alphabet__ {
     "0...."
     "0...."
     "0....";
-    const std::string q = 
+    const std::string letter_q = 
     "....."
     "....."
     ".00.."
@@ -437,7 +437,7 @@ namespace __alphabet__ {
     ".000."
     "...0."
     "...0.";
-    const std::string r = 
+    const std::string letter_r = 
     "....."
     "....."
     "0.00."
@@ -447,7 +447,7 @@ namespace __alphabet__ {
     "0...."
     "....."
     ".....";
-    const std::string s = 
+    const std::string letter_s = 
     "....."
     "....."
     ".000."
@@ -457,7 +457,7 @@ namespace __alphabet__ {
     "000.."
     "....."
     ".....";
-    const std::string t = 
+    const std::string letter_t = 
     ".0..."
     ".0..."
     "0000."
@@ -467,7 +467,7 @@ namespace __alphabet__ {
     "..0.."
     "....."
     ".....";
-    const std::string u = 
+    const std::string letter_u = 
     "....."
     "....."
     "0..0."
@@ -477,7 +477,7 @@ namespace __alphabet__ {
     ".000."
     "....."
     ".....";
-    const std::string v = 
+    const std::string letter_v = 
     "....."
     "....."
     "0...0"
@@ -487,7 +487,7 @@ namespace __alphabet__ {
     "..0.."
     "....."
     ".....";
-    const std::string w = 
+    const std::string letter_w = 
     "....."
     "....."
     "0...0"
@@ -497,7 +497,7 @@ namespace __alphabet__ {
     ".0.0."
     "....."
     ".....";
-    const std::string x = 
+    const std::string letter_x = 
     "....."
     "....."
     "0..0."
@@ -507,7 +507,7 @@ namespace __alphabet__ {
     "0..0."
     "....."
     ".....";
-    const std::string y = 
+    const std::string letter_y = 
     "....."
     "....."
     "0..0."
@@ -517,7 +517,7 @@ namespace __alphabet__ {
     "...0."
     "...0."
     ".00..";
-    const std::string z = 
+    const std::string letter_z = 
     "....."
     "....."
     "0000."
@@ -743,58 +743,58 @@ namespace __alphabet__ {
     ".....";
 
     const std::map<char, std::string> mapping = {
-        {'a', a},
-        {'b', b},
-        {'c', c},
-        {'d', d},
-        {'e', e},
-        {'f', f},
-        {'g', g},
-        {'h', h},
-        {'i', i},
-        {'j', j},
-        {'k', k},
-        {'l', l},
-        {'m', m},
-        {'n', n},
-        {'o', o},
-        {'p', p},
-        {'q', q},
-        {'r', r},
-        {'s', s},
-        {'t', t},
-        {'u', u},
-        {'v', v},
-        {'w', w},
-        {'x', x},
-        {'y', y},
-        {'z', z},
-        {'A', A},
-        {'B', B},
-        {'C', C},
-        {'D', D},
-        {'E', E},
-        {'F', F},
-        {'G', G},
-        {'H', H},
-        {'I', I_},
-        {'J', J},
-        {'K', K},
-        {'L', L},
-        {'M', M},
-        {'N', N_},
-        {'O', O},
-        {'P', P},
-        {'Q', Q},
-        {'R', R},
-        {'S', S},
-        {'T', T},
-        {'U', U},
-        {'V', V},
-        {'W', W},
-        {'X', X},
-        {'Y', Y},
-        {'Z', Z},
+        {'a', letter_a},
+        {'b', letter_b},
+        {'c', letter_c},
+        {'d', letter_d},
+        {'e', letter_e},
+        {'f', letter_f},
+        {'g', letter_g},
+        {'h', letter_h},
+        {'i', letter_i},
+        {'j', letter_j},
+        {'k', letter_k},
+        {'l', letter_l},
+        {'m', letter_m},
+        {'n', letter_n},
+        {'o', letter_o},
+        {'p', letter_p},
+        {'q', letter_q},
+        {'r', letter_r},
+        {'s', letter_s},
+        {'t', letter_t},
+        {'u', letter_u},
+        {'v', letter_v},
+        {'w', letter_w},
+        {'x', letter_x},
+        {'y', letter_y},
+        {'z', letter_z},
+        {'A', letter_A},
+        {'B', letter_B},
+        {'C', letter_C},
+        {'D', letter_D},
+        {'E', letter_E},
+        {'F', letter_F},
+        {'G', letter_G},
+        {'H', letter_H},
+        {'I', letter_I},
+        {'J', letter_J},
+        {'K', letter_K},
+        {'L', letter_L},
+        {'M', letter_M},
+        {'N', letter_N},
+        {'O', letter_O},
+        {'P', letter_P},
+        {'Q', letter_Q},
+        {'R', letter_R},
+        {'S', letter_S},
+        {'T', letter_T},
+        {'U', letter_U},
+        {'V', letter_V},
+        {'W', letter_W},
+        {'X', letter_X},
+        {'Y', letter_Y},
+        {'Z', letter_Z},
         {'1', num1},
         {'2', num2},
         {'3', num3},

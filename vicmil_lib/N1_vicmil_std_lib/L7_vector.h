@@ -65,7 +65,7 @@ extend_vec({1, 2}, {3, 4, 5}) -> {1, 2, 3, 4, 5}
 @arg add_vec: the vector to add to vec
 */
 template <class T>
-void vec_extend(std::vector<T>& vec, std::vector<T> vec_add){
+void vec_extend(std::vector<T>& vec, const std::vector<T>& vec_add){
     vec.insert(vec.end(), vec_add.begin(), vec_add.end());
 }
 }

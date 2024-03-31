@@ -184,6 +184,17 @@ namespace vicmil {
         return true;
     }
 
+    /**
+     * Get the smallest rectangle so that no part of rect1 and rect2 is outside it
+    */
+    template<class T>
+    Rect get_bounding_rect(RectT<T> rect1, RectT<T> rect2) {
+        T min_x = std::min(rect1.min_x(), rect2.min_x());
+        T min_y = std::min(rect1.min_y(), rect2.min_y());
+        T max_x = std::max(rect1.max_x(), rect2.max_x());
+        T max_y = std::max(rect1.max_y(), rect2.max_y());
+        return Rect(min_x, min_y, max_x - min_x, max_y - min_y);
+    }
 
     /**
      * Class for specifying the window layout, what window should go where etc.

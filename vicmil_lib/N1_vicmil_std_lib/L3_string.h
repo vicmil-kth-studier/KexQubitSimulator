@@ -101,4 +101,91 @@ bool regex_match_expr(std::string str, std::string regex_expr) {
     return std::regex_match(str, std::regex(regex_expr));
 }
 
+/**
+ * Takes an arbitrary type and converts it to binary, eg string of 1:s and 0:es
+*/
+template<class T>
+std::string to_binary_str(T& value) {
+    int size_in_bytes = sizeof(T);
+    char* bytes = (char*)&value;
+    std::string return_str;
+    for(int i = 0; i < size_in_bytes; i++) {
+        if(i != 0) {
+            return_str += " ";
+        }
+        for(int j = 0; j < 8; j++) {
+            if((bytes[i] & (1<<j)) == 0) {
+                return_str += "0";
+            }
+            else {
+                return_str += "1";
+            }
+        }
+    }
+    return return_str;
+}
+
+/** UTF8 is compatible with ascii, and can be stored in a string(of chars)
+ * Since ascii is only 7 bytes, we can have one bit represent if it is a regular ascii
+ *  or if it is a unicode character. Unicode characters can be one, two, three or four bytes
+ * 
+ * See https://en.wikipedia.org/wiki/UTF-8 for more info
+**/ 
+bool is_utf8_ascii_char(char char_) {
+    return ((char)(1<<7) & char_) == 0;
+}
+bool is_utf8_two_byte_char(char char_) {
+    return ((char)(1<<5) & char_) == 0;
+}
+bool is_utf8_three_byte_char(char char_) {
+    return ((char)(1<<4) & char_) == 0;
+}
+bool is_utf8_four_byte_char(char char_) {
+    return ((char)(1<<3) & char_) == 0;
+}
+/**
+ * Returns how many bytes the next utf8 letter will be comprised of
+ *  the first byte always dictates the size*/
+int get_utf8_letter_size(char first_char_) {
+    if(is_utf8_ascii_char(first_char_)) {
+        // Just treat the char as normal ascii!
+        return 1;
+    }
+    if(is_utf8_two_byte_char(first_char_)) {
+        return 2;
+    }
+    if(is_utf8_three_byte_char(first_char_)) {
+        return 3;
+    }
+    if(is_utf8_four_byte_char(first_char_)) {
+        return 4;
+    }
+    return -1; // Invalid character
+}
+/**
+ * Returns utf8 character at index in string, and updates the index
+ *  UTF8 means different characters may be different length
+*/
+std::string get_next_utf8_char(const std::string& str, int& index) {
+    // See https://en.wikipedia.org/wiki/UTF-8 for more info
+    char next_char = str[index];
+    Debug(to_binary_str(next_char));
+    int char_count = get_utf8_letter_size(next_char);
+    if(char_count == -1) {
+        ThrowError("Error when fetching utf8, invalid character!");
+    }
+    std::string new_char = str.substr(index, char_count);
+    index += char_count;
+    return new_char;
+}
+void TEST_get_next_utf8_char() {
+    const std::vector<std::string> indv_chars = {"z", "\u00df", "\u6c34", "\U0001f34c"};
+    const std::string utf8_str = "z\u00df\u6c34\U0001f34c";
+    int utf8_str_index = 0;
+    for(int i = 0; i < indv_chars.size(); i++) {
+        std::string u8_char = get_next_utf8_char(utf8_str, utf8_str_index);
+        Assert(u8_char == indv_chars[i]);
+    }
+}
+AddTest(TEST_get_next_utf8_char);
 }

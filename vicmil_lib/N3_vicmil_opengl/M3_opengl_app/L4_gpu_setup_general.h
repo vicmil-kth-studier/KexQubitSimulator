@@ -1,4 +1,4 @@
-#include "L2_view_transform.h"
+#include "L3_image_packing.h"
 
 namespace vicmil {
 namespace general_gpu_setup {
@@ -100,6 +100,33 @@ struct Triangle {
 };
 
 /**
+ * Get the smallest rectangle so that
+ * - No part of the triangle is outside the rectangle
+*/
+Rect get_triange_bounding_rect(Triangle triangle) {
+    double min_x = std::min(std::min(triangle.corner1.position.x, triangle.corner2.position.x), triangle.corner3.position.x);
+    double max_x = std::max(std::max(triangle.corner1.position.x, triangle.corner2.position.x), triangle.corner3.position.x);
+    double min_y = std::min(std::min(triangle.corner1.position.y, triangle.corner2.position.y), triangle.corner3.position.y);
+    double max_y = std::max(std::max(triangle.corner1.position.y, triangle.corner2.position.y), triangle.corner3.position.y);
+    return Rect(min_x, min_y, max_x - min_x, max_y - min_y);
+}
+/**
+ * Get the smallest rectangle so that
+ * - No part of the triangles is outside the rectangle
+*/
+Rect get_triangles_bounding_rect(const std::vector<Triangle>& triangles) {
+    if(triangles.size() == 0) {
+        return Rect(0, 0, 0, 0);
+    }
+    // Find the rectangle that fits all triangles
+    Rect bounding_rect = get_triange_bounding_rect(triangles[0]);
+    for(int i = 1; i < triangles.size(); i++) {
+        bounding_rect = vicmil::get_bounding_rect(bounding_rect, get_triange_bounding_rect(triangles[i]));
+    }
+    return bounding_rect;
+}
+
+/**
  * Create 2 triangles to reprent a rectangle of a specified color
 */
 static std::vector<Triangle> triangles_from_2d_color_rect(Rect rect, glm::vec4 color) {
@@ -121,13 +148,14 @@ static std::vector<Triangle> triangles_from_2d_color_rect(Rect rect, glm::vec4 c
 }
 
 /**
- * Create 2 triangles to reprent a rectangle of a specified color
+ * Create 2 triangles to represent a rectangle with a specified texture position
 */
 static std::vector<Triangle> triangles_from_2d_texture_rect(Rect rect, Rect tex_rect) {
-    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), 0.0); // (0, 0)
-    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), 0.0); // (0, 1)
-    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), 0.0); // (1, 0)
-    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.max_y(), 0.0); // (1, 1)
+    // (NOTE: The y coordinates have to be reversed to follow openGL format)
+    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.max_y(), 0.0); // (0, 0)
+    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.min_y(), 0.0); // (0, 1)
+    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.max_y(), 0.0); // (1, 0)
+    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.min_y(), 0.0); // (1, 1)
 
     glm::vec2 tex_p1 = glm::vec2(tex_rect.min_x(), tex_rect.min_y()); // (0, 0)
     glm::vec2 tex_p2 = glm::vec2(tex_rect.min_x(), tex_rect.max_y()); // (0, 1)
@@ -217,5 +245,105 @@ void set_view_transform(GPUSetup& gpu_setup, CameraViewTransform transform) {
 void set_image(GPUSetup& gpu_setup, RawImageRGBA& image) {
     ThrowNotImplemented();
 }
+
+
+/**
+ * Index a texture mapping with a key to get the image texture position
+ * Then generate a set of triangles to draw it
+ * @arg key: the key to index the texture mapping
+ * @arg rect: where to draw it on screen
+ * @arg tex_mapping: a texture mapping with texture positions
+*/
+static std::vector<Triangle> triangles_from_texture_mapping_key(std::string key, Rect rect, std::map<std::string, Rect>& tex_mapping) {
+    if(tex_mapping.find(key) != tex_mapping.end()) {
+        Rect texture_rect = tex_mapping[key];
+        std::vector<Triangle> triangles = triangles_from_2d_texture_rect(rect, texture_rect);
+        return triangles;
+    }
+    else {
+        // Draw red rectangle if key cannot be found
+        std::vector<Triangle> triangles = triangles_from_2d_color_rect(rect, glm::vec4(1, 0, 0, 1));
+        return triangles;
+    }
+}
+/**
+ * Take a list of triangles and make sure they fit inside the rectangle (In terms of x and y)
+ *  Make sure the triangles touches the edges of the rectangle and maintains their relative positions
+*/
+void fit_triangles_inside_rect(std::vector<Triangle>& triangles, Rect rect, bool maintain_aspect_ratio) {
+    if(triangles.size() == 0) {
+        return;
+    }
+    // Get the rectangle that perfectly fits all triangles
+    Rect bounding_rect = get_triangles_bounding_rect(triangles);
+
+    // Find the appropriate scaling factor
+    double scaling_x = rect.w / bounding_rect.w;
+    double scaling_y = rect.h / bounding_rect.h;
+    if(maintain_aspect_ratio) {
+        scaling_x = std::min(scaling_x, scaling_y);
+        scaling_y = scaling_x;
+    }
+
+    // Update the triangle positions!
+    for(int i = 1; i < triangles.size(); i++) {
+        // Make position relative bounding rectangle
+        triangles[i].corner1.position.x -= bounding_rect.x;
+        triangles[i].corner1.position.y -= bounding_rect.y;
+        triangles[i].corner2.position.x -= bounding_rect.x;
+        triangles[i].corner2.position.y -= bounding_rect.y;
+        triangles[i].corner2.position.x -= bounding_rect.x;
+        triangles[i].corner2.position.y -= bounding_rect.y;
+
+        // Apply scaling
+        triangles[i].corner1.position.x *= scaling_x;
+        triangles[i].corner1.position.y *= scaling_y;
+        triangles[i].corner2.position.x *= scaling_x;
+        triangles[i].corner2.position.y *= scaling_y;
+        triangles[i].corner2.position.x *= scaling_x;
+        triangles[i].corner2.position.y *= scaling_y;
+
+        // Translate position to target rectangle
+        triangles[i].corner1.position.x += rect.x;
+        triangles[i].corner1.position.y += rect.y;
+        triangles[i].corner2.position.x += rect.x;
+        triangles[i].corner2.position.y += rect.y;
+        triangles[i].corner2.position.x += rect.x;
+        triangles[i].corner2.position.y += rect.y;
+    }
+}
+
+/**
+ * Tips: Then use fit_triangles_inside_rect to place the text wherever you want!
+ * (Can probably be optimized)
+*/
+/*std::vector<Triangle> create_triangles_from_text(std::string text, std::map<std::string, Rect> tex_mapping, double screen_aspect_ratio) {
+    double char_w = 0.05;
+    double char_h = char_w * screen_aspect_ratio * __alphabet__::LETTER_HEIGHT / (double)__alphabet__::LETTER_WIDTH;
+    double spacing = char_w / __alphabet__::LETTER_WIDTH;
+    std::vector<Triangle> return_triangles = {};
+
+    int line_nr = 0;
+    int line_char_count = 0; // The number of characters on the current line
+    for(int i = 0; i < text.size(); i++) {
+        if(text[i] == '\n') {
+            line_nr += 1;
+            line_char_count = 0;
+            continue;
+        }
+        if(text[i] == ' ') {
+            continue;
+        }
+        Rect letter_pos;
+        letter_pos.x = line_char_count*(char_w+spacing);
+        letter_pos.y = 1-line_nr*(char_h+spacing); // OpenGL flips the y coordinate
+        letter_pos.w = char_w;
+        letter_pos.h = char_h;
+
+        const std::vector<Triangle> new_triangles = triangles_from_texture_mapping_key(std::string(text[i]), letter_pos, tex_mapping);     
+        vicmil::vec_extend(return_triangles, new_triangles);   
+    }
+    return return_triangles;
+}*/
 }
 }
