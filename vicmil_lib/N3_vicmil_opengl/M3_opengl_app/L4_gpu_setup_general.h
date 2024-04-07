@@ -129,11 +129,11 @@ Rect get_triangles_bounding_rect(const std::vector<Triangle>& triangles) {
 /**
  * Create 2 triangles to reprent a rectangle of a specified color
 */
-static std::vector<Triangle> triangles_from_2d_color_rect(Rect rect, glm::vec4 color) {
-    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), 0.0); // (0, 0)
-    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), 0.0); // (0, 1)
-    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), 0.0); // (1, 0)
-    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.max_y(), 0.0); // (1, 1)
+static std::vector<Triangle> triangles_from_2d_color_rect(Rect rect, glm::vec4 color, double depth = 0) {
+    glm::vec3 p1 = glm::vec3(rect.min_x(), rect.min_y(), depth); // (0, 0)
+    glm::vec3 p2 = glm::vec3(rect.min_x(), rect.max_y(), depth); // (0, 1)
+    glm::vec3 p3 = glm::vec3(rect.max_x(), rect.min_y(), depth); // (1, 0)
+    glm::vec3 p4 = glm::vec3(rect.max_x(), rect.max_y(), depth); // (1, 1)
 
     Triangle triangle1 = Triangle();
     triangle1.set_triangle_color(color);

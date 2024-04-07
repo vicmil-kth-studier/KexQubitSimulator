@@ -1,114 +1,6 @@
 #include "L8_typing.h"
-#include <random>
 
 namespace vicmil {
-    /**
-     * Have a class that can store a pointer to a void function.
-     * Great for storing function pointers
-    */ 
-    class VoidFuncRef {
-        void_function_type _func;
-        bool _has_function_pointer = false;
-    public:
-        VoidFuncRef() :
-            _has_function_pointer(false) {}
-        VoidFuncRef(void_function_type func) :
-            _func(func) {
-                _has_function_pointer = true;
-        }
-        /** Try calling the void function
-         * @return 0 if void function was succefully called, 1 if function pointer was not set
-        */
-        int try_call() {
-            if(_has_function_pointer) {
-                _func();
-                return 0;
-            }
-
-            Debug("Function not set!");
-            return 1;
-        }
-        /**
-         * Call the void function, throw error if it does not exist
-        */
-        void call() {
-            if(try_call() != 0) {
-                ThrowError("Function not set!");
-            }
-        }
-    };
-
-    /**
-     * Generate all kinds of random numbers, from floats to integers in different ranges!
-    */
-    class RandomNumberGenerator {
-    public:
-        std::mt19937 _gen;
-        RandomNumberGenerator(): _gen(std::mt19937()) {
-            set_random_seed(); // Default to random seed
-        }
-
-        /** Seed the random number generator with the specified seed */
-        void set_seed(uint64_t new_seed = std::mt19937_64::default_seed) {
-            _gen.seed(new_seed);
-        }
-        /** Seed the random number generator with a random seed(based on current time) */
-        void set_random_seed() {
-            int time_ms = get_time_since_epoch_ms();
-            set_seed(time_ms);
-            // Call random generator a few times to make it more random
-            //   (each call to _gen updates the state randomly)
-            rand();
-            rand();
-            rand();
-            rand();
-            rand();
-        }
-
-        /** Generate a random number between 0 and 1 */
-        double rand_between_0_and_1() {
-            std::uniform_real_distribution<double> dis(0.0, 1.0);
-            double x = dis(_gen);
-            return x;
-        }
-
-        /** Generate a random integer number of an int, min=0, max=2^64-1 */
-        uint64_t rand() {
-            return _gen();
-        }
-        /** Generate a random double in the specified interval */
-        double rand_double(double min_, double max_) {
-            Assert(min_ <= max_);
-            double rng_val = rand_between_0_and_1() * (max_ - min_) + min_;
-            return rng_val;
-        }
-        /** Generate a random integer in the specified interval */
-        int rand_int(int min_, int max_) {
-            Assert(min_ <= max_);
-            int rng_val = (rand() % (max_ - min_)) + min_;
-            return rng_val;
-        }
-    };
-
-    // Counts the number of class instances and assigns each instance a unique id
-    class ClassInstanceCounter {
-        static int _get_instance_count(bool inc) {
-            static int instance_count = 0;
-            if(inc) {
-                instance_count += 1;
-            }
-            return instance_count;
-        }
-        int instance_id = _get_instance_count(true);
-    public:
-        static int get_instance_count() {
-            return _get_instance_count(false);
-        }
-        int get_instance_id() {
-            return instance_id;
-        }
-    };
-
     /**
      * General template class for rectangle
     */
@@ -205,6 +97,12 @@ namespace vicmil {
         return Rect(min_x, min_y, max_x - min_x, max_y - min_y);
     }
 
+namespace __layout__ {
+
+    class AttachedElement {
+    public:
+        virtual void update() = 0;
+    };
 
     struct _WindowLayoutElement {
         RectT<int> pixel_position = RectT<int>(0, 0, 100, 100);
@@ -217,7 +115,8 @@ namespace vicmil {
         bool split_horizontal = true; // Otherwise split vertical
         std::vector<int> children_indecies = {};
         int parent_index = -1;
-        bool updated = false; // If it has been updated since last update call
+        std::weak_ptr<class AttachedElement> attached_element = std::weak_ptr<AttachedElement>();
+        //bool updated = false; // If it has been updated since last update call
     };
 
     struct _WindowLayout {
@@ -275,6 +174,20 @@ namespace vicmil {
         int set_size(int width, int height) {
             return set_size(width, width, height, height);
         }
+        int set_width(int min_width, int max_width) {
+            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
+                return -1;
+            }
+            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
+            return set_size(min_width, max_width, element.min_height, element.max_height);
+        }
+        int set_height(int min_height, int max_height) {
+            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
+                return -1;
+            }
+            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
+            return set_size(element.min_width, element.max_width, min_height, max_height);
+        }
 
         // Default is 0. The order to hide elements if necessary, lowest first
         //  (in case of twist, it will hide the last child element first)
@@ -294,8 +207,15 @@ namespace vicmil {
             return _layout_ref.lock()->_layout_elements[_element_index].pixel_position;
         }
 
-        // Set a function to be called each time the element is resized
-        void set_resize_event_func() {ThrowNotImplemented(); }
+        // Set a class to be called each time the element is updated
+        int set_attached_element(std::weak_ptr<AttachedElement> attached_element_) {
+            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
+                return -1;
+            }
+            Print("Set attached element!");
+            _layout_ref.lock()->_layout_elements[_element_index].attached_element = attached_element_;
+            return 0;
+        }
 
 
         // Get the element sizes based on min-max requirements
@@ -386,8 +306,8 @@ namespace vicmil {
 
             DebugExpr(min_size_sum);
             DebugExpr(total_size);
-            Assert(min_size_sum > 0);
-            Assert(total_size > 0);
+            Assert(min_size_sum >= 0);
+            Assert(total_size >= 0);
             Assert(size_min.size() > 0);
             Assert(size_max.size() > 0);
             Assert(priorities.size() > 0);
@@ -408,6 +328,11 @@ namespace vicmil {
             }
         }
 
+        /**
+         * Get a list of all childrens minimum sizes
+         *  (in the horizontal or vertical direction depending on split direction)
+         * eg. {child0.min_width, child1.min_width, child2.min_width, ...}
+        */
         std::vector<int> get_min_size_of_all_children() {
             std::vector<int> return_vec = {};
 
@@ -424,6 +349,11 @@ namespace vicmil {
             return return_vec;
         }
 
+        /**
+         * Get a list of all childrens maximum sizes
+         *  (in the horizontal or vertical direction depending on split direction)
+         * eg. {child0.max_width, child1.max_width, child2.max_width, ...}
+        */
         std::vector<int> get_max_size_of_all_children() {
             std::vector<int> return_vec = {};
 
@@ -494,10 +424,10 @@ namespace vicmil {
                 }
             }
 
-            if(child.pixel_position != new_position) {
-                child.pixel_position = new_position;
-                _get_window_layout_element(element.children_indecies[child_index])._update();
-            }
+            //if(child.pixel_position != new_position) {
+            child.pixel_position = new_position;
+            _get_window_layout_element(element.children_indecies[child_index])._update();
+            //}
         }
 
         // Update children elements
@@ -507,7 +437,13 @@ namespace vicmil {
             }
             _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
             
-            // Call the update function if it exists TODO
+            // Call attached element
+            if(!element.attached_element.expired()) {
+                element.attached_element.lock()->update();
+            }
+            else {
+                Print("element.attached_element expired");
+            }
 
             // Fetch children parameters
             std::vector<int> children_size_min = get_min_size_of_all_children();
@@ -575,6 +511,20 @@ namespace vicmil {
             return 0;
         }
 
+        int erase_children() {
+            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
+                return -1;
+            }
+            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
+
+            // Delete all children
+            while(element.children_indecies.size() > 0) {
+                int child_element_index = element.children_indecies.back();
+                _get_window_layout_element(child_element_index)._erase();
+            }
+            return 0;
+        }
+
         // Delete the element and all its children
         int _erase() {
             if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
@@ -592,11 +542,7 @@ namespace vicmil {
                 }
             }
             
-            // Delete all children
-            while(element.children_indecies.size() > 0) {
-                int child_element_index = element.children_indecies.back();
-                _get_window_layout_element(child_element_index)._erase();
-            }
+            erase_children();
 
             // Remove window element from elements
             _layout_ref.lock()->_layout_elements.erase(_element_index);
@@ -709,162 +655,162 @@ namespace vicmil {
     }
     AddTest(TEST2_WindowLayout);
 
-    /**
-     * Tries to fit a list of rectangles into a bigger rectangle of a certain width and height
-     * Returns true if it is succssfull!
-     * Updates the positions of the rectangles so that they do not overlap
-     * 
-     * NOTE! Assumes the rectangles are already sorted on height in descending order
-    */
-    bool fit_rects_in_rect(std::vector<RectT<int>>& rects_height_descend, int width, int height) {
-        if(rects_height_descend.size() == 0) {
-            // Trivial case
-            return true;
-        }
 
-        // Naive approach(Can be improved)
-        // Tries to fit as many rects as possible on a certain y-level, if it fails, it moves to a new y-level
-        int y_level = 0;
-        int level_height = rects_height_descend[0].h;
-        int x = 0;
-        for(int i = 0; i < rects_height_descend.size(); i++) {
-            if(rects_height_descend[i].w + x >= width) {
-                // Cannot fit more rects on current y-level, move to new y-level
-                y_level += level_height;
-                level_height = rects_height_descend[i].h;
-                x = 0;
+    struct _Anchor: public AttachedElement {
+        WindowLayoutElement attached_element;
+        bool attach_top = false;
+        bool attach_left = false;
+        bool dock_horizontal = false; // Otherwise dock vertical
+        WindowLayout window_layout = WindowLayout();
+        WindowLayoutElement alignment_element_left;
+        WindowLayoutElement alignment_element_right;
+        WindowLayoutElement alignment_element_top;
+        WindowLayoutElement alignment_element_bottom;
+        WindowLayoutElement anchor_element;
+        void _setup_left_alignment(RectT<int> attached_element_position,
+            int element_max_width) {
+            int size = 0;
+            if(attach_left && dock_horizontal) {
+                size = attached_element_position.min_x() - element_max_width;
             }
-            if(rects_height_descend[i].h + y_level >= height) {
-                // Height limit exceeded!
-                return false;
+            else if(!attach_left && dock_horizontal) {
+                size = attached_element_position.max_x();
             }
-            rects_height_descend[i].x = x;
-            rects_height_descend[i].y = y_level;
-            x += rects_height_descend[i].w;
-        }
-        return true;
-    }
-    /**
-     * Try to pack a list of rectangles into the smallest 2^n * 2^n grid as possible
-     *   such that no rectangles overlap (no rotations)
-     * Updates the rectangle positions and returns the grid size
-     * 
-     * Some names related to this problem
-     *  - bin packing
-     *  - rect packing
-    */
-    int rect_packing_pow2_sq(std::vector<RectT<int>>& rects) {
-        // Lets start by calculating a minimum for the grid size
-        //  - It has to be bigger or equal to the total area of the rectangles
-        //  - It cannot be smaller than the biggest rectangle
-
-        int area = 0;
-        for(int i = 0; i < rects.size(); i++) {
-            area += rects[i].h * rects[i].w;
-        }
-
-        int max_rect_size = 0;
-        for(int i = 0; i < rects.size(); i++) {
-            max_rect_size = std::max(rects[i].w, max_rect_size);
-            max_rect_size = std::max(rects[i].h, max_rect_size);
-        }
-        unsigned int grid_size = upper_power_of_two(std::sqrt(area));
-        grid_size = std::max(grid_size, upper_power_of_two(max_rect_size));
-        
-
-        // Lets sort the rectangles by height in descending order(while maintaining the index of the rectangles)
-        std::vector<std::pair<int, int>> rects_height_and_index; // <height, rect index>
-        for(int i = 0; i < rects.size(); i++) {
-            rects_height_and_index.push_back(std::make_pair(rects[i].h, i));
-        }
-        std::sort(rects_height_and_index.begin(), 
-            rects_height_and_index.end(), 
-            [](const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) {
-                return lhs > rhs;
-        });
-
-
-        // Lets create a copy of rects but with the height sorted in descending order
-        std::vector<RectT<int>> rects_height_descend;
-        rects_height_descend.resize(rects.size());
-        for(int i = 0; i < rects.size(); i++) {
-            rects_height_descend[i] = rects[rects_height_and_index[i].second];
-        }
-
-        // Sanity check to see it is descending order
-        for(int i = 0; i < std::min((int)rects_height_descend.size(), 10); i++) {
-            if(i != 0) {
-                // Make sure it is ascending!
-                Assert(rects_height_descend[i-1].h >= rects_height_descend[i].h)
+            else if(attach_left && !dock_horizontal) {
+                size = attached_element_position.min_x();
             }
-            DebugExpr(rects_height_descend[i].to_string());
-        }
-
-
-        // Lets start trying to place the rectangles into the grid! And see if they fit
-        //  If they don't fit, then we have to increase the size of the grid and try again...
-        while(fit_rects_in_rect(rects_height_descend, grid_size, grid_size) == false) {
-            grid_size = grid_size * 2;
-        }
-
-        // We found a match! Update the positions of the original rectangles
-        for(int i = 0; i < rects.size(); i++) {
-            rects[rects_height_and_index[i].second] = rects_height_descend[i];
-        }
-        return grid_size;
-    }
-    void TEST_rect_packing_pow2_sq() {
-        // Try packing a lot of rectangles and see that
-        //  - The grid size is a power of 2
-        //  - All rectangles maintain their width and height
-        //  - They all fit inside the provided grid size
-        //  - None overlap
-        RandomNumberGenerator rand_gen;
-        rand_gen.set_seed(123);
-        std::vector<RectT<int>> rects;
-        for(int i = 0; i < 100; i++) {
-            RectT<int> new_rect;
-            new_rect.x = rand_gen.rand_int(1, 100);
-            new_rect.y = rand_gen.rand_int(1, 100);
-            new_rect.w = rand_gen.rand_int(1, 100);
-            new_rect.h = rand_gen.rand_int(1, 100);
-            rects.push_back(new_rect);
-        }
-        std::vector<RectT<int>> rects_copy = rects;
-        int grid_size = rect_packing_pow2_sq(rects);
-        PrintExpr(grid_size);
-
-        // Assert the grid size is a power of 2
-        Assert(vicmil::is_power_of_two(grid_size) == true);
-
-        // Assert all rectangles maintain their width and height
-        Assert(rects.size() == rects_copy.size());
-        for(int i = 0; i < rects.size(); i++) {
-            Assert(rects[i].w == rects_copy[i].w);
-            Assert(rects[i].h == rects_copy[i].h);
-        }
-
-        // Assert all rectangles fit inside the grid
-        for(int i = 0; i < rects.size(); i++) {
-            Assert(rects[i].min_x() >= 0);
-            Assert(rects[i].min_y() >= 0);
-            Assert(rects[i].max_x() < grid_size);
-            Assert(rects[i].max_y() < grid_size);
-        }
-
-        // Assert no rectangles overlap
-        for(int i1 = 0; i1 < rects.size(); i1++) {
-            for(int i2 = 0; i2 < i1; i2++) {
-                bool overlap_ = is_overlap(rects[i1], rects[i2]);
-                if(overlap_) {
-                    PrintExpr(i1);
-                    PrintExpr(i2);
-                    PrintExpr(rects[i1].to_string_min_max());
-                    PrintExpr(rects[i2].to_string_min_max());
-                }
-                Assert(overlap_ == false);
+            else if(!attach_left && !dock_horizontal) {
+                size = attached_element_position.max_x() - element_max_width;
             }
+            size = std::max(size, 0);
+            alignment_element_left.set_width(size, size);
         }
-    }
-    AddTest(TEST_rect_packing_pow2_sq);
-}
+        void _setup_right_alignment(
+            RectT<int> entire_window_position,
+            RectT<int> attached_element_position
+        ) {
+            int size = 0;
+            if(attach_left && dock_horizontal) {
+                size = entire_window_position.w - attached_element_position.min_x();
+            }
+            size = std::max(size, 0);
+            alignment_element_right.set_width(size, size);
+        }
+        void _setup_top_alignment(RectT<int> attached_element_position,
+            int element_max_height) {
+            int size = 0;
+            if(attach_top && dock_horizontal) {
+                size = attached_element_position.min_y();
+            }
+            else if(!attach_top && dock_horizontal) {
+                size = attached_element_position.max_y() - element_max_height;
+            }
+            else if(attach_top && !dock_horizontal) {
+                size = attached_element_position.min_y() - element_max_height;
+            }
+            else if(!attach_top && !dock_horizontal) {
+                size = attached_element_position.max_y();
+            }
+            size = std::max(size, 0);
+            alignment_element_top.set_height(size, size);
+
+        }
+        void _setup_bottom_alignment(
+            RectT<int> entire_window_position,
+            RectT<int> attached_element_position
+        ) {
+            int size = 0;
+            if(attach_top && !dock_horizontal) {
+                size = entire_window_position.h - attached_element_position.min_y();
+            }
+            size = std::max(size, 0);
+            alignment_element_bottom.set_height(size, size);
+        }
+        void _update_anchor_alignment() {
+            RectT<int> entire_window_position = window_layout.get_window_element().get_position();
+            RectT<int> attached_element_position = attached_element.get_position();
+            _WindowLayoutElement& element_ = window_layout._window_layout->_layout_elements[anchor_element._element_index];
+
+            if(attached_element_position.w == 0 || attached_element_position.h == 0) {
+                // Hide the anchor(by making no space left for it)
+                alignment_element_left.set_width(entire_window_position.w, entire_window_position.w);
+                return;
+            }
+
+            int element_max_width = element_.max_width;
+            int element_max_height = element_.max_height;
+            if(element_max_width < 0) {
+                element_max_width = entire_window_position.w;
+            }
+            if(element_max_height < 0) {
+                element_max_height = entire_window_position.h;
+            }
+            _setup_left_alignment(attached_element_position, element_max_width);
+            _setup_right_alignment(entire_window_position, attached_element_position);
+            _setup_top_alignment(attached_element_position, element_max_height);
+            _setup_bottom_alignment(entire_window_position, attached_element_position);
+        }
+        void update() override {
+            Print("Anchor update()");
+            // Update the entire window position
+            RectT<int> entire_window_position = attached_element._layout_ref.lock()->_layout_elements[0].pixel_position;
+            window_layout._window_layout->_layout_elements[0].pixel_position = entire_window_position;
+            _update_anchor_alignment();
+            window_layout.get_window_element().update();
+        }
+        _Anchor() {
+            // Setup alignment correctly
+            WindowLayoutElement entire_window_element = window_layout.get_window_element();
+            entire_window_element.set_horizontal_split();
+            alignment_element_left = entire_window_element.create_child_element();
+            WindowLayoutElement temp = entire_window_element.create_child_element();
+            alignment_element_right = entire_window_element.create_child_element();
+
+            temp.set_vertical_split();
+            alignment_element_top = temp.create_child_element();
+            anchor_element = temp.create_child_element();
+            alignment_element_bottom = temp.create_child_element();
+
+            alignment_element_left.set_priority_level(1);
+            alignment_element_right.set_priority_level(1);
+            alignment_element_top.set_priority_level(1);
+            alignment_element_bottom.set_priority_level(1);
+        }
+    };
+    class Anchor {
+    public:
+        std::shared_ptr<_Anchor> _anchor = std::shared_ptr<_Anchor>();
+        Anchor(WindowLayoutElement layout_element) {
+            _anchor = std::make_shared<_Anchor>(_Anchor());
+            _anchor->attached_element = layout_element;
+            layout_element.set_attached_element(_anchor);
+        }
+        Anchor() {}
+        WindowLayoutElement get_window_layout_element() {
+            return _anchor->anchor_element;
+        }
+        void set_size(int width, int height) {
+            _anchor->anchor_element.set_size(width, height);
+        }
+        void set_attach_top() {
+            _anchor->dock_horizontal = false;
+            _anchor->attach_top = true;
+        }
+        void set_attach_bottom() {
+            _anchor->dock_horizontal = false;
+            _anchor->attach_top = false;
+        }
+        void set_attach_right() {
+            _anchor->dock_horizontal = true;
+            _anchor->attach_left = false;
+        }
+        void set_attach_left() {
+            _anchor->dock_horizontal = true;
+            _anchor->attach_left = true;
+        }
+        void update() {
+            _anchor->anchor_element.update();
+        }
+    };
+};
+};
