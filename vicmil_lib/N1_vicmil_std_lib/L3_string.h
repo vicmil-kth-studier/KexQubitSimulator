@@ -58,6 +58,19 @@ inline std::string vec_to_string(const std::vector<double>& vec) {
     return out_str;
 }
 
+inline std::string vec_to_string(const std::vector<int>& vec) {
+    std::string out_str;
+    out_str += "{ ";
+    for(int i = 0; i < vec.size(); i++) {
+        if(i != 0) {
+            out_str += ", ";
+        }
+        out_str += std::to_string(vec[i]);
+    }
+    out_str += " }";
+    return out_str;
+}
+
 std::vector<std::string> regex_find_all(std::string str, std::string regex_expr) {
     // Wrap regular expression in c++ type
     std::regex r = std::regex(regex_expr);
