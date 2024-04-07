@@ -39,7 +39,12 @@ void setup_frag_shader_blending() {
 
 void create_window_and_renderer(int width, int height, SDL_Renderer** renderer, SDL_Window** window) {
     /* Create a windowed mode window and its OpenGL context */
+    #ifdef __EMSCRIPTEN__
+    // Resizing in emscripten makes the window flicker :(
+    SDL_CreateWindowAndRenderer(width, height, SDL_WINDOW_OPENGL, window, renderer);
+    #else
     SDL_CreateWindowAndRenderer(width, height, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE, window, renderer);
+    #endif
 
     Debug("OpenGL version " << glGetString(GL_VERSION));
 }

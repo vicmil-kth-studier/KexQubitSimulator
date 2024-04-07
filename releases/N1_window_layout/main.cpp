@@ -110,6 +110,11 @@ void update(){
             glViewport(0,0,(GLsizei)w,(GLsizei)h);
         }
     }
+
+    #ifdef __EMSCRIPTEN__
+    main_app.layout.set_size(vicmil::browser::window_width, vicmil::browser::window_height);
+    #endif
+
     render();
 };
 
