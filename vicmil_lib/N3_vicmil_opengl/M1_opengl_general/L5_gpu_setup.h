@@ -15,7 +15,8 @@ void quit_SDL() {
  * Quit if requested by user
  * Update window to keep it alive
 */ 
-void update_SDL() {
+std::vector<SDL_Event> update_SDL() {
+    std::vector<SDL_Event> events;
     SDL_Event event;
     while( SDL_PollEvent( &event ) ) {
         if( event.type == SDL_QUIT )
@@ -23,7 +24,9 @@ void update_SDL() {
             quit_SDL();
             throw;
         }
+        events.push_back(event);
     }
+    return events;
 }
 
 /**
@@ -36,7 +39,7 @@ void setup_frag_shader_blending() {
 
 void create_window_and_renderer(int width, int height, SDL_Renderer** renderer, SDL_Window** window) {
     /* Create a windowed mode window and its OpenGL context */
-    SDL_CreateWindowAndRenderer(width, height, SDL_WINDOW_OPENGL, window, renderer);
+    SDL_CreateWindowAndRenderer(width, height, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE, window, renderer);
 
     Debug("OpenGL version " << glGetString(GL_VERSION));
 }

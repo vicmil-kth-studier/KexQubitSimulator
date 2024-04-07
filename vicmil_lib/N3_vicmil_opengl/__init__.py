@@ -10,6 +10,7 @@ def N5_gcc_add_opengl_compiler_settings(builder: CppBuilder):
     builder.add_argument("-w -lSDL2")
     builder.add_argument("-w -lSDL2_image")
     builder.add_argument("-w -lGL")  #(Used for OpenGL on desktops)
+    builder.add_argument("-I/usr/include")
 
     # builder.add_argument("-w -lGLESv2")  # (OpenGL ES, subet of OPENGL that can also run in browser)
     # builder.add_argument("-lEGL")

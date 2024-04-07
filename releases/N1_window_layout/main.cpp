@@ -8,49 +8,52 @@ bool init_called = false;
 class Application {
 public:
     vicmil::WindowLayout layout = vicmil::WindowLayout();
-    int top_bar_id;
-    int bottom_id;
-    int left_bottom_id;
-    int right_bottom_id;
+    vicmil::WindowLayoutElement entire_window;
+        vicmil::WindowLayoutElement top_bar;
+        vicmil::WindowLayoutElement bottom_bar;
+            //vicmil::WindowLayoutElement right_scroll; // TODO
+            //vicmil::WindowLayoutElement bottom_scroll; // TODO
 
     // Temp variable, resets every draw call
     std::vector<vicmil::general_gpu_setup::Triangle> triangles;
     
     Application() {
-        layout.set_window_position(-1, -1, 1, 1);
-        layout.set_split_window_horizontal(false);
-        bottom_id = layout.add_subwindow(30, layout.get_instance_id(), true);
-            right_bottom_id = layout.add_subwindow(1, bottom_id);
-            left_bottom_id = layout.add_subwindow(1, bottom_id);
-        top_bar_id = layout.add_subwindow();
+        layout.set_size(1000, 1000);
+        entire_window = layout.get_window_element();
+        entire_window.set_vertical_split();
+        top_bar = entire_window.create_child_element();
+        top_bar.set_size(100, 100);
+        bottom_bar = entire_window.create_child_element();
+        entire_window.update();
+    }
+    vicmil::Rect get_opengl_coordinates(vicmil::RectT<int> rect) {
+        vicmil::Rect return_rect;
+        vicmil::RectT<int> full_window = entire_window.get_position();
+        return_rect.w = (2*(double)rect.w) / full_window.w;
+        return_rect.h = (2*(double)rect.h) / full_window.h;
+        return_rect.x = (2*((double)rect.x) / full_window.w) - 1;
+        return_rect.y = (2*((double)rect.y) / full_window.h) - 1;
+        return_rect.y = -return_rect.y - return_rect.h;
+        return return_rect;
     }
     void draw_top_bar() {
-        vicmil::Rect rect;
-        layout.get_window_position(top_bar_id, &rect);
+        vicmil::Rect rect = get_opengl_coordinates(top_bar.get_position());
         vicmil::vec_extend(
             triangles,
             vicmil::general_gpu_setup::triangles_from_2d_color_rect(rect, glm::dvec4(0, 0.5, 0.5, 1.0))
         );
     }
-    void draw_bottom_left() {
-        vicmil::Rect rect;
-        layout.get_window_position(left_bottom_id, &rect);
+    void draw_bottom_bar() {
+        vicmil::Rect rect = get_opengl_coordinates(bottom_bar.get_position());
         vicmil::vec_extend(
             triangles,
             vicmil::general_gpu_setup::triangles_from_2d_color_rect(rect, glm::dvec4(0.3, 0, 0.7, 1.0))
         );
     }
-    void draw(double screen_width, double screen_height) {
+    void draw() {
         triangles = {};
-        if(screen_width / screen_height > 0.7) {
-            layout.set_split_window_horizontal(true, bottom_id);
-        }
-        else {
-            layout.set_split_window_horizontal(false, bottom_id);
-        }
-
         draw_top_bar();
-        draw_bottom_left();
+        draw_bottom_bar();
 
         // Draw all the triangles!
         vicmil::general_gpu_setup::set_triangles(setup, triangles);
@@ -66,11 +69,7 @@ void render() {
     setup.window_renderer.set_to_current_window();
     vicmil::clear_screen();
 
-    #ifdef __EMSCRIPTEN__
-    main_app.draw(vicmil::browser::window_width, vicmil::browser::window_height);
-    #else
-    main_app.draw(1000, 1000);
-    #endif
+    main_app.draw();
 
     setup.show_on_screen();
     END_TRACE_FUNCTION();
@@ -94,7 +93,23 @@ void update(){
         init_called = true;
         init();
     }
-    vicmil::update_SDL();
+    std::vector<SDL_Event> events = vicmil::update_SDL();
+    for(int i = 0; i < events.size(); i++) {
+        SDL_Event event = events[i];
+        if(event.type == SDL_WINDOWEVENT &&
+            event.window.event == SDL_WINDOWEVENT_RESIZED) {
+            Print("Window Resize!");
+            int w;
+            int h;
+            vicmil::get_window_size(setup.window_renderer.window, &w, &h);
+            main_app.layout.set_size(w, h);
+            PrintExpr(w);
+            PrintExpr(h);
+            PrintExpr(main_app.top_bar.get_position().w);
+            PrintExpr(main_app.entire_window.get_position().w);
+            glViewport(0,0,(GLsizei)w,(GLsizei)h);
+        }
+    }
     render();
 };
 

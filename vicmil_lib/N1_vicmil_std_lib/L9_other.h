@@ -482,10 +482,16 @@ namespace vicmil {
             else if(element.split_horizontal) {
                 new_position.x = pos;
                 new_position.w = size;
+                if(child.max_height >= 0) {
+                    new_position.h = std::min(element.pixel_position.h, child.max_height);
+                }
             }
             else {
                 new_position.y = pos;
                 new_position.h = size;
+                if(child.max_width >= 0) {
+                    new_position.w = std::min(element.pixel_position.w, child.max_width);
+                }
             }
 
             if(child.pixel_position != new_position) {
@@ -672,19 +678,19 @@ namespace vicmil {
         left_screen.set_size(200, 200);
         WindowLayoutElement right_screen = whole_screen.create_child_element();
         window_layout.set_size(1000, 800);
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 200, 800));
+        Assert(left_screen.get_position() == RectT<int>(0, 0, 200, 200));
         Assert(right_screen.get_position() == RectT<int>(200, 0, 800, 800));
 
         left_screen.set_size(600, 600);
         left_screen.update();
         DebugExpr(left_screen.get_position().to_string());
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 800));
+        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 600));
         Assert(right_screen.get_position() == RectT<int>(600, 0, 400, 800));
 
         // Assert right one disappears if both won't fit(and they have same priority)
         right_screen.set_size(600, 600);
         right_screen.update();
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 800));
+        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 600));
         DebugExpr(right_screen.get_position().to_string());
         Assert(right_screen.get_position() == RectT<int>(0, 0, 0, 0));
 
@@ -694,11 +700,11 @@ namespace vicmil {
         DebugExpr(right_screen.get_position().to_string());
         DebugExpr(left_screen.get_position().to_string());
         Assert(left_screen.get_position() == RectT<int>(0, 0, 0, 0));
-        Assert(right_screen.get_position() == RectT<int>(0, 0, 600, 800));
+        Assert(right_screen.get_position() == RectT<int>(0, 0, 600, 600));
         
         // Assert that left one gets back if we delete the right
         right_screen.erase();
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 800));
+        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 600));
         Assert(right_screen.get_position() == RectT<int>(0, 0, 0, 0));
     }
     AddTest(TEST2_WindowLayout);
