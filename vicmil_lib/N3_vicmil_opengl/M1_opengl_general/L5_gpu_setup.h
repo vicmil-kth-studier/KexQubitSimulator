@@ -14,6 +14,7 @@ void quit_SDL() {
 /**
  * Quit if requested by user
  * Update window to keep it alive
+ * Fetch events since last update
 */ 
 std::vector<SDL_Event> update_SDL() {
     std::vector<SDL_Event> events;

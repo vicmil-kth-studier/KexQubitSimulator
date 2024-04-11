@@ -100,4 +100,20 @@ bool mouse_inside_rect(Rect& rect, WindowInfo& window_info, MouseState mouse_sta
     double mouse_y = get_mouse_pos_y(window_info, mouse_state);
     return rect.is_inside_rect(mouse_x, mouse_y);
 }
+
+vicmil::Rect get_opengl_position(vicmil::RectT<int> rect, vicmil::RectT<int> full_window) {
+    vicmil::Rect return_rect;
+    return_rect.w = vicmil::w_pixel_to_opengl(rect.w, full_window.w);
+    return_rect.h = vicmil::h_pixel_to_opengl(rect.h, full_window.h);
+    return_rect.x = vicmil::x_pixel_to_opengl(rect.x, full_window.w);
+    return_rect.y = vicmil::y_pixel_to_opengl(rect.y, full_window.h);
+    return_rect.y -= return_rect.h;
+    return return_rect;
+}
+
+vicmil::Rect get_opengl_position(vicmil::__layout__::WindowLayoutElement element_) {
+    vicmil::RectT<int> full_window = element_._layout_ref.lock()->_layout_elements[0].pixel_position;
+    vicmil::RectT<int> rect = element_.get_position();
+    return get_opengl_position(rect, full_window);
+}
 }

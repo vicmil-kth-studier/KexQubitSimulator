@@ -1,4 +1,5 @@
 #include "L8_typing.h"
+#include <list>
 
 namespace vicmil {
     /**
@@ -99,9 +100,14 @@ namespace vicmil {
 
 namespace __layout__ {
 
+    /**
+     * You can add attached elements to window elements; 
+     * that means that when the element updates position,
+     * the attached elements update function is called
+    */
     class AttachedElement {
     public:
-        virtual void update() = 0;
+        virtual void updated_position_event() = 0; // Called when position is updated
     };
 
     struct _WindowLayoutElement {
@@ -115,8 +121,8 @@ namespace __layout__ {
         bool split_horizontal = true; // Otherwise split vertical
         std::vector<int> children_indecies = {};
         int parent_index = -1;
-        std::weak_ptr<class AttachedElement> attached_element = std::weak_ptr<AttachedElement>();
-        //bool updated = false; // If it has been updated since last update call
+        std::weak_ptr<class AttachedElement> anchor_element = std::weak_ptr<AttachedElement>();
+        std::weak_ptr<class AttachedElement> widget_element = std::weak_ptr<AttachedElement>();
     };
 
     struct _WindowLayout {
@@ -128,6 +134,10 @@ namespace __layout__ {
         }
     };
 
+    /**
+     * A rectangle on the screen
+     * The screen can be split into a set of rectangles!
+    */
     class WindowLayoutElement {
     public:
         std::weak_ptr<class _WindowLayout> _layout_ref = std::weak_ptr<class _WindowLayout>();
@@ -208,12 +218,20 @@ namespace __layout__ {
         }
 
         // Set a class to be called each time the element is updated
-        int set_attached_element(std::weak_ptr<AttachedElement> attached_element_) {
+        int set_widget_element(std::weak_ptr<AttachedElement> widget_element_) {
             if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
                 return -1;
             }
-            Print("Set attached element!");
-            _layout_ref.lock()->_layout_elements[_element_index].attached_element = attached_element_;
+            _layout_ref.lock()->_layout_elements[_element_index].widget_element = widget_element_;
+            return 0;
+        }
+
+        // Set a class to be called each time the element is updated
+        int set_anchor_element(std::weak_ptr<AttachedElement> anchor_element_) {
+            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
+                return -1;
+            }
+            _layout_ref.lock()->_layout_elements[_element_index].anchor_element = anchor_element_;
             return 0;
         }
 
@@ -438,12 +456,13 @@ namespace __layout__ {
             _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
             
             // Call attached element
-            if(!element.attached_element.expired()) {
-                element.attached_element.lock()->update();
+            if(!element.anchor_element.expired()) {
+                element.anchor_element.lock()->updated_position_event();
             }
-            else {
-                Print("element.attached_element expired");
+            if(!element.widget_element.expired()) {
+                element.widget_element.lock()->updated_position_event();
             }
+            
 
             // Fetch children parameters
             std::vector<int> children_size_min = get_min_size_of_all_children();
@@ -750,7 +769,7 @@ namespace __layout__ {
             _setup_top_alignment(attached_element_position, element_max_height);
             _setup_bottom_alignment(entire_window_position, attached_element_position);
         }
-        void update() override {
+        void updated_position_event() override {
             Print("Anchor update()");
             // Update the entire window position
             RectT<int> entire_window_position = attached_element._layout_ref.lock()->_layout_elements[0].pixel_position;
@@ -777,13 +796,16 @@ namespace __layout__ {
             alignment_element_bottom.set_priority_level(1);
         }
     };
+    /**
+     * Anchors can be attached to window elements, they float above. This can be great for menus for example!
+    */
     class Anchor {
     public:
         std::shared_ptr<_Anchor> _anchor = std::shared_ptr<_Anchor>();
         Anchor(WindowLayoutElement layout_element) {
             _anchor = std::make_shared<_Anchor>(_Anchor());
             _anchor->attached_element = layout_element;
-            layout_element.set_attached_element(_anchor);
+            layout_element.set_anchor_element(_anchor);
         }
         Anchor() {}
         WindowLayoutElement get_window_layout_element() {
@@ -792,24 +814,157 @@ namespace __layout__ {
         void set_size(int width, int height) {
             _anchor->anchor_element.set_size(width, height);
         }
-        void set_attach_top() {
-            _anchor->dock_horizontal = false;
+        void align_top() {
             _anchor->attach_top = true;
         }
-        void set_attach_bottom() {
-            _anchor->dock_horizontal = false;
+        void align_bottom() {
             _anchor->attach_top = false;
         }
-        void set_attach_right() {
-            _anchor->dock_horizontal = true;
+        void align_right() {
             _anchor->attach_left = false;
         }
-        void set_attach_left() {
-            _anchor->dock_horizontal = true;
+        void align_left() {
             _anchor->attach_left = true;
+        }
+        void attach_horizontal() {
+            _anchor->dock_horizontal = true;
+        }
+        void attach_vertical() {
+            _anchor->dock_horizontal = false;
         }
         void update() {
             _anchor->anchor_element.update();
+        }
+    };
+
+    /**
+     * An interface class for a mouse, contains basic functions
+    */
+    class MouseInputInterface {
+    public:
+        virtual int x() = 0;
+        virtual int y() = 0;
+        virtual bool has_clicked() = 0;
+    };
+    class _Widget: public AttachedElement {
+    public:
+        bool _is_selected = false;
+        bool _is_clicked = false;
+        bool _is_last_clicked_widget = false; 
+        WindowLayoutElement _layout_element; // [Optional] attached layout element
+        double depth = 0; // In case two widgets are ontop of each other, the one with lowest depth will be ontop
+        RectT<int> position = RectT<int>(0, 0, 0, 0);
+        void updated_position_event() override { // Called when layout element changes position
+            position = _layout_element.get_position();
+        }
+    };
+    /**
+     * A widget is an element on the screen that can be interacted with, for example pressed on with the mouse
+     *  The WidgetManager keeps track of all the widgets.
+     * A widget can be attached to a WindowElement, and therefore update its position dynamically!
+    */
+    class Widget {
+    public:
+        std::shared_ptr<_Widget> widget;
+
+        Widget() {
+            widget = std::make_shared<_Widget>();
+        }
+        
+        bool is_selected() {return widget->_is_selected;} // If the mouse is hovering above widget
+        bool is_clicked() {return widget->_is_clicked;} // If the mouse just clicked on widget
+        bool is_last_clicked_widget() {return widget->_is_last_clicked_widget;} // If mouse havn't pressed anything since it last pressed widget
+
+        // Called each time WidgetManager is updated
+        virtual void update() {}
+
+        void set_layout_element(WindowLayoutElement layout_element_) {
+            widget->_layout_element = layout_element_;
+            layout_element_.set_widget_element(widget);
+        }
+    };
+    /**
+     * The window manager keeps track of all the widgets, like which widget is the one the user is pointing at
+     * (This can be good if you have widgets stacked ontop of each other)
+     * It also makes sure to update all the widgets each time it gets an update call
+    */
+    class WidgetManager {
+    public:
+        std::list<std::weak_ptr<Widget>> widgets = {};
+        std::weak_ptr<MouseInputInterface> mouse_input;
+        WidgetManager() {}
+        WidgetManager(std::weak_ptr<MouseInputInterface> mouse_input_) {
+            mouse_input = mouse_input_;
+        }
+        void add_widget(std::weak_ptr<Widget> new_widget) {
+            widgets.push_back(new_widget);
+        }
+        void _remove_expired_widgets() {
+            auto it = widgets.begin();
+            while(it != widgets.end()) {
+                if((*it).expired()) {
+                    auto it_copy = it;
+                    it++;
+                    widgets.erase(it_copy);
+                    continue;
+                }
+                it++;
+            }
+        }
+        void _find_selected_widget() {
+            // Fetch mouse data
+            int mouse_position_x = mouse_input.lock()->x();
+            int mouse_position_y = mouse_input.lock()->y();
+            bool mouse_has_clicked = mouse_input.lock()->has_clicked();
+
+            // Find top widget where the mouse is
+            bool found_top = false;
+            auto top_widget = widgets.begin();
+            auto it = widgets.begin();
+            while(it != widgets.end()) {
+                _Widget& widget = *(*it).lock()->widget;
+                widget._is_selected = false;
+                widget._is_clicked = false;
+                if(mouse_has_clicked) {
+                    widget._is_last_clicked_widget = false;
+                }
+
+                if(widget.position.is_inside_rect(mouse_position_x, mouse_position_y)) {
+                    if(!found_top) {
+                        top_widget = it;
+                        found_top = true;
+                    }
+                    else if(widget.depth < (*top_widget).lock()->widget->depth) {
+                        top_widget = it;
+                        found_top = true;
+                    }
+                }
+                it++;
+            }
+            if(found_top) {
+                _Widget& widget = *(*top_widget).lock()->widget;
+                widget._is_selected = true;
+                if(mouse_has_clicked) {
+                    widget._is_last_clicked_widget = true;
+                    widget._is_clicked = true;
+                }
+            }
+        }
+        void _update_all_widgets() {
+            auto it = widgets.begin();
+            while(it != widgets.end()) {
+                (*it).lock()->update();
+                it++;
+            }
+        }
+        int update() {
+            if(mouse_input.expired()) {
+                return -1;
+            }
+            _remove_expired_widgets();
+            _find_selected_widget();
+            _update_all_widgets();
+            return 0;
         }
     };
 };
