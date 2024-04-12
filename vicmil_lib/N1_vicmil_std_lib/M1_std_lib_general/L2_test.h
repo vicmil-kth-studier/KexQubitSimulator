@@ -62,7 +62,7 @@ struct TestClass : public FactoryBase {
         std::cout << "All tests passed!" << std::endl;;
     }
     static bool should_run_test(std::string test_name, std::vector<std::string>& test_keywords) {
-        return match_keywords(test_name, test_keywords);
+        return !match_ignore(test_name, test_keywords);
     }
 };
 
@@ -87,25 +87,4 @@ void test() { \
     test_name(); \
 } \
 );
-
-/*struct TestInstance {
-    void_function_type func_ref;
-    std::string identifier = "";
-    std::string identifier_long = "";
-    TestInstance(void_function_type func_ref_, std::string identifier_, std::string identifier_long_) {
-        func_ref = func_ref_;
-        identifier = identifier_;
-        identifier_long = identifier_long_;
-    }
-};
-class TestTracker {
-    static std::set<TestInstance> tests;
-public:
-    static TestInstance _add_test_instance(TestInstance test_instance) {
-        tests.insert(test_instance);
-    }
-    void run_tests(std::vector<std::string>& test_keywords) {
-
-    }
-}*/
 }

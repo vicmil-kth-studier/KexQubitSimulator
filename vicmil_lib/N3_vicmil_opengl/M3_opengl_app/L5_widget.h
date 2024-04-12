@@ -67,6 +67,13 @@ bool window_resized(const std::vector<SDL_Event>& events) {
     return false;
 } 
 
+void translate_position_to_viewport(int& x, int& y, RectT<int> viewport, RectT<int> full_window) {
+    double x_proc = (x - full_window.x) / (double)full_window.w;
+    double y_proc = (y - full_window.y) / (double)full_window.h;
+    x = x_proc * viewport.w + viewport.x;
+    y = y_proc * viewport.h + viewport.y;
+}
+
 vicmil::__layout__::MouseInput get_mouse_input(vicmil::SDLUserInputRef user_input) {
     vicmil::__layout__::MouseInput mouse_input;
     mouse_input.was_clicked = mouse_left_clicked(user_input.get_recent_events());

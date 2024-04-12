@@ -4,6 +4,39 @@
 
 
 namespace vicmil {
+/*
+Convert a vector of something into a string
+example: "{123.321, 314.0, 42.0}"
+*/
+template<class T>
+std::string vec_to_str(const std::vector<T>& vec) {
+    std::string out_str;
+    out_str += "{ ";
+    for(int i = 0; i < vec.size(); i++) {
+        if(i != 0) {
+            out_str += ", ";
+        }
+        out_str += std::to_string(vec[i]);
+    }
+    out_str += " }";
+    return out_str;
+}
+
+/*
+Convert a vector of strings into a single string
+["a", "b"] -> "{'a', 'b'}"
+*/
+std::string vec_to_str(const std::vector<std::string>& vec) {
+    std::string return_str = "{";
+    for(int i = 0; i < vec.size(); i++) {
+        if(i != 0) {
+            return_str += ", ";
+        }
+        return_str += "'" + vec[i] + "'";
+    }
+    return_str += " }";
+    return return_str;
+}
 
 /**
  * Replaces each instance of a str_from to str_to inside str
@@ -39,36 +72,6 @@ AddTest(TEST_string_replace);
 */
 int count_char_in_string(std::string& str, char char_) {
     return count(str.begin(), str.end(), char_);
-}
-
-/**
- * Convert a vector of double type to a single string
- * "{123.321, 314.0, 42.0}"
-*/
-inline std::string vec_to_string(const std::vector<double>& vec) {
-    std::string out_str;
-    out_str += "{ ";
-    for(int i = 0; i < vec.size(); i++) {
-        if(i != 0) {
-            out_str += ", ";
-        }
-        out_str += std::to_string(vec[i]);
-    }
-    out_str += " }";
-    return out_str;
-}
-
-inline std::string vec_to_string(const std::vector<int>& vec) {
-    std::string out_str;
-    out_str += "{ ";
-    for(int i = 0; i < vec.size(); i++) {
-        if(i != 0) {
-            out_str += ", ";
-        }
-        out_str += std::to_string(vec[i]);
-    }
-    out_str += " }";
-    return out_str;
 }
 
 std::vector<std::string> regex_find_all(std::string str, std::string regex_expr) {

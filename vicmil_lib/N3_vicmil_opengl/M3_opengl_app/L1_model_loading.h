@@ -8,7 +8,7 @@ namespace vicmil {
 struct Vertex {
     PositionF3 v;
     static Vertex from_obj_file_line(std::vector<std::string> args) {
-        expect_vec_length(args, 4, "[Parse Error] [Wrong number of args]");
+        Assert(args.size() == 4);
         Vertex new_vertex;
         new_vertex.v = PositionF3::from_str(args[1], args[2], args[3]);
         return new_vertex;
@@ -18,7 +18,7 @@ struct Vertex {
 struct TextureCoordinate {
     TextureCoordF2 v;
     static TextureCoordinate from_obj_file_line(std::vector<std::string> args) {
-        expect_vec_length(args, 3, "[Parse Error] [Wrong number of args]");
+        Assert(args.size() == 3);
         TextureCoordinate new_tex_coord;
         new_tex_coord.v = TextureCoordF2::from_str(args[1], args[2]);
         return new_tex_coord;
@@ -28,7 +28,7 @@ struct TextureCoordinate {
 struct Normal {
     NormalF3 v;
     static Normal from_obj_file_line(std::vector<std::string> args) {
-        expect_vec_length(args, 4, "[Parse Error] [Wrong number of args]");
+        Assert(args.size() ==  4);
         Normal new_normal;
         new_normal.v = NormalF3::from_str(args[1], args[2], args[3]);
         return new_normal;
@@ -40,7 +40,7 @@ struct Surface {
     IndexedTriangleI3 tex_coordinate_index; // Defaults to 0
     IndexedTriangleI3 normal_index;
     static Surface from_obj_file_line(std::vector<std::string> args) {
-        expect_vec_length(args, 16, "[Parse Error] [Wrong number of args]");
+        Assert(args.size() == 16);
         Surface new_surface;
         new_surface.vertex_index =         IndexedTriangleI3::from_str(args[1], args[1+5], args[1+5*2]);
         new_surface.tex_coordinate_index = IndexedTriangleI3::from_str(args[3], args[3+5], args[3+5*2]);
@@ -52,7 +52,7 @@ struct Surface {
 struct Color {
     ColorF3 v; // [r, g, b], values between 0.0 - 1.0
     static Color from_obj_file_line(std::vector<std::string> args) {
-        expect_vec_length(args, 4, "[Parse Error] [Wrong number of args]");
+        Assert(args.size() == 4);
         Color new_color;
         new_color.v = ColorF3::from_str(args[1], args[2], args[3]);
         return new_color;
@@ -92,7 +92,7 @@ public:
 
     void parse_obj_line(std::vector<std::string> args) {
         if(args[0] == "mtllib") {
-            expect_vec_length(args, 2, "[Parse Error] [Wrong number of args]");
+            Assert(args.size() == 2);
             mtl_files.push_back(args[1]);
             return;
         }   
@@ -110,7 +110,7 @@ public:
         }   
 
         if(args[0] == "usemtl") { // Set active material to use
-            expect_vec_length(args, 2, "[Parse Error] [Wrong number of args]");
+            Assert(args.size() == 2);
             use_material(args[1]);
             return;
         }   
@@ -175,7 +175,7 @@ public:
 
     void parse_mtl_line(std::vector<std::string> args) {
         if(args[0] == "newmtl") { // Set active material to use
-            expect_vec_length(args, 2, "[Parse Error] [Wrong number of args]");
+            Assert(args.size() == 2);
             this->new_material(args[1]);
             return;
         }   

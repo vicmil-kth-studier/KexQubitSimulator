@@ -93,20 +93,22 @@ inline bool string_contains(const std::string& str, const std::string& substr) {
     return str.find(substr) != std::string::npos;
 }
 
-/** 
- * Determine if a string matches the keywords
- * Returns false if it does not match any keywords
- * Returns false if it matches with any prohibited keywords, marked with ! in front
- * Otherwise, returns true
+/**
+ * If it matches ignore format
+ * Search str to find keywords
+ * if the keyword starts with !, make it not ignore that str
 */
-inline bool match_keywords(const std::string str, const std::vector<std::string>& keywords) {
+inline bool match_ignore(const std::string str, const std::vector<std::string>& keywords) {
     bool return_val = false;
     for(int i = 0; i < keywords.size(); i++) {
         std::string keyword = keywords[i];
+        if(keyword == "" || keyword == " ") {
+            continue;
+        }
         if(keyword[0] == '!') { // Reject keyword
             keyword = keyword.substr(1, std::string::npos);
             if(string_contains(str, keyword)) {
-                return false;
+                return_val = false;
             }
         }
         else {
@@ -126,7 +128,7 @@ inline bool match_keywords(const std::string str, const std::vector<std::string>
 */
 #define IfRelevant(x, keywords) \
     { \
-        static const bool __relevant__ = vicmil::match_keywords(GetLongLineInfo, keywords); \
+        static const bool __relevant__ = !vicmil::match_ignore(GetLongLineInfo, keywords); \
         if (__relevant__) { \
             x; \
         } \
@@ -137,7 +139,7 @@ inline bool match_keywords(const std::string str, const std::vector<std::string>
 #ifdef DEBUG_KEYWORDS
     const std::string __debug_keywords_raw__ = DEBUG_KEYWORDS;
 #else
-    const std::string __debug_keywords_raw__ = ".,!vicmil_lib";
+    const std::string __debug_keywords_raw__ = "vicmil_lib";
 #endif
 
 const std::vector<std::string> __debug_keywords__ = vicmil::split_string(__debug_keywords_raw__, ',');
@@ -225,45 +227,8 @@ namespace vicmil {
 #define START_TRACE_FUNCTION() Debug(std::string("start ") + __func__)
 
 /**
- * Print that a function has existed
+ * Print that a function has exited
  *   Good for degugging code where you want to know what functions are executed
 */
 #define END_TRACE_FUNCTION() Debug(std::string("exit ") + __func__)
-
-/**
- * Throws an error if val != expected, also prints a nice error message
-*/
-template <class T>
-static void expect_value(T val, T expected, std::string err_message) {
-    if(val != expected) {
-        std::cout << err_message << ", expected " << expected << "got: " << val << std::endl;
-        throw;
-    }
-}
-
-/*
-Convert a vector of strings into a single string
-["a", "b"] -> "{'a'   'b'}"
-*/
-std::string str_vec_to_str(std::vector<std::string> vec) {
-    std::string return_str = "{\n";
-    for(int i = 0; i < vec.size(); i++) {
-        return_str.append("    '" + vec[i] + "'\n");
-    }
-    return_str += "}";
-    return return_str;
-}
-
-/**
- * Throws an error if vec.size() != size, also prints a nice error message
-*/
-template<class T>
-void expect_vec_length(std::vector<T>& vec, int size, std::string err_message) {
-    if (vec.size() != size) {
-        std::cout << err_message << "expected size " << size << " got " << vec.size() << std::endl;
-        std::cout << str_vec_to_str(vec);
-        throw;
-    }
-}
-
 }

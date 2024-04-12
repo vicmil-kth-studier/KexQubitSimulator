@@ -1,16 +1,13 @@
 #define USE_DEBUG
 #define DEBUG_KEYWORDS "!vicmil_lib,/source,main(),init()" 
-#include "../../source/quantum_computer_include.h"
+#include "../../vicmil_lib/vicmil_lib.h"
 
 bool init_called = false;
 vicmil::general_app_setup::App app = vicmil::general_app_setup::App();
-vicmil::__layout__::Widget button_widget = vicmil::__layout__::Widget();
+vicmil::__layout__::Widget button_widget;
 
 void render() {
     vicmil::clear_screen();
-
-    // Draw layout
-    app.draw_add(vicmil::visualize_layout_element(app.get_layout_reference(), 0.1, 10));
 
     // Draw button
     glm::vec4 color = glm::vec4(0.0, 1.0, 0.0, 1.0);
@@ -41,6 +38,10 @@ void update(){
         init_called = true;
         init();
     }
+    update_window_layout_size(app.window_layout); // Handle window layout size update from emscripten if enabled
+    PrintExpr(app.window_layout.get_entire_window_reference().get_position().to_string());
+    Print("x: " << app.get_user_input_reference().get_mouse_state().x() << 
+        "  y: " << app.get_user_input_reference().get_mouse_state().y());
     app.update();
 
     render();

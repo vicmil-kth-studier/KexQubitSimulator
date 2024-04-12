@@ -129,19 +129,6 @@ void vec_remove(std::vector<T>& vec, std::size_t pos)
     vec.erase(it);
 }
 
-
-
-/**
-Extend one vector with another(can also be referred to as vector adding or concatenation)
-extend_vec({1, 2}, {3, 4, 5}) -> {1, 2, 3, 4, 5}
-@arg vec: the first vector
-@arg add_vec: the vector to add to vec
-*/
-template <class T>
-void vec_extend(std::vector<T>& vec, std::vector<T>& vec_add){
-    vec.insert(vec.end(), vec_add.begin(), vec_add.end());
-}
-
 /**
 Extend one vector with another(can also be referred to as vector adding or concatenation)
 extend_vec({1, 2}, {3, 4, 5}) -> {1, 2, 3, 4, 5}
