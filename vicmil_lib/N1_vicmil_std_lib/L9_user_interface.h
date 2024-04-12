@@ -1,5 +1,4 @@
 #include "L8_typing.h"
-#include <list>
 
 namespace vicmil {
     /**
@@ -19,25 +18,25 @@ namespace vicmil {
             w = w_;
             h = h_;
         }
-        T min_x() {
+        T min_x() const {
             return x;
         }
-        T max_x() {
+        T max_x() const {
             return x + w;
         }
-        T min_y() {
+        T min_y() const {
             return y;
         }
-        T max_y() {
+        T max_y() const {
             return y + h;
         }
-        T center_x() {
+        T center_x() const {
             return x + (w / 2.0);
         }
-        T center_y() {
+        T center_y() const {
             return y + (h / 2.0);
         }
-        bool is_inside_rect(T x_, T y_) {
+        bool is_inside_rect(T x_, T y_) const {
             if(!in_range<T>(x_, x, x + w)) {
                 return false;
             }
@@ -46,26 +45,26 @@ namespace vicmil {
             }
             return true;
         }
-        std::string to_string() {
+        std::string to_string() const {
             return "x: " + std::to_string(x) + 
                     "   y: " + std::to_string(y) + 
                     "   w: " + std::to_string(w) + 
                     "   h: " + std::to_string(h);
         }
-        std::string to_string_min_max() {
+        std::string to_string_min_max() const {
             return "min_x: " + std::to_string(min_x()) + 
                     "   min_y: " + std::to_string(min_y()) + 
                     "   max_x: " + std::to_string(max_x()) + 
                     "   max_y: " + std::to_string(max_y());
         }
-        bool operator==(const RectT<T> other) {
+        bool operator==(const RectT<T> other) const {
             return 
                 x == other.x &&
                 y == other.y &&
                 w == other.w &&
                 h == other.h;
         }
-        bool operator!=(const RectT<T> other) {
+        bool operator!=(const RectT<T> other) const {
             return !(*this == other);
         }
     };
@@ -98,7 +97,330 @@ namespace vicmil {
         return Rect(min_x, min_y, max_x - min_x, max_y - min_y);
     }
 
+    /**
+     * Align rectangle edges along x axis
+     * @arg rect: The rectangle to move
+     * @arg stationaty_rect: The other rectangle which is stationary
+     * @arg rect_left_side: If the moving rectangle should align on left side(otherwise right)
+     * @arg stationaty_rect_left_side: If the stationary rectangle should align on left side(otherwise right)
+    */
+    void align_rect_edge_x(RectT<int>& rect, RectT<int> stationaty_rect, bool rect_left_side, bool stationaty_rect_left_side) {
+        if(stationaty_rect_left_side) {
+            rect.x = stationaty_rect.x;
+        }
+        else {
+            rect.x = stationaty_rect.x + stationaty_rect.w;
+        }
+        if(rect_left_side) {
+            rect.x -= rect.w;
+        }
+    }
+    /**
+     * Align rectangle edges along x axis
+     * @arg rect: The rectangle to move
+     * @arg stationaty_rect: The other rectangle which is stationary
+     * @arg rect_top_side: If the moving rectangle should align on top side(otherwise bottom)
+     * @arg stationaty_rect_top_side: If the stationary rectangle should align on top side(otherwise bottom)
+    */
+    void align_rect_edge_y(RectT<int>& rect, RectT<int> stationaty_rect, bool rect_top_side, bool stationaty_rect_top_side) {
+        if(stationaty_rect_top_side) {
+            rect.y = stationaty_rect.y;
+        }
+        else {
+            rect.y = stationaty_rect.y + stationaty_rect.h;
+        }
+        if(rect_top_side) {
+            rect.y -= rect.h;
+        }
+    }
+
+    /**
+     * Cut of parts of the rectangle that are outside the boundry rectangle
+    */
+    void cut_rect_to_fit(RectT<int>& rect, const RectT<int> boundry) {
+        int min_x = std::max(rect.min_x(), boundry.min_x());
+        int max_x = std::min(rect.max_x(), boundry.max_x());
+        int min_y = std::max(rect.min_y(), boundry.min_y());
+        int max_y = std::min(rect.max_y(), boundry.max_y());
+        rect.x = min_x;
+        rect.y = min_y;
+        rect.w = max_x - min_x;
+        rect.h = max_y - min_y;
+    }
+
+    enum RectAlignment {
+        LEFT_align_TOP,
+        LEFT_align_MIDDLE_H,
+        LEFT_align_BOTTOM,
+
+        RIGHT_align_TOP,
+        RIGHT_align_MIDDLE_H,
+        RIGHT_align_BOTTOM,
+
+        TOP_align_LEFT,
+        TOP_align_MIDDLE_W,
+        TOP_align_RIGHT,
+
+        BOTTOM_align_LEFT,
+        BOTTOM_align_MIDDLE_W,
+        BOTTOM_align_RIGHT,
+
+        MIDDLE
+    };
+    void align_rect(RectT<int>& rect, const RectT<int> stationaty_rect, RectAlignment alignment) {
+        if(alignment == RectAlignment::LEFT_align_TOP) {
+            align_rect_edge_x(rect, stationaty_rect, true, true);
+            align_rect_edge_y(rect, stationaty_rect, false, true);
+        }
+        else if(alignment == RectAlignment::LEFT_align_BOTTOM) {
+            align_rect_edge_x(rect, stationaty_rect, true, true);
+            align_rect_edge_y(rect, stationaty_rect, true, false);
+        }
+        else if(alignment == RectAlignment::RIGHT_align_TOP) {
+            align_rect_edge_x(rect, stationaty_rect, false, false);
+            align_rect_edge_y(rect, stationaty_rect, false, true);
+        }
+        else if(alignment == RectAlignment::RIGHT_align_BOTTOM) {
+            align_rect_edge_x(rect, stationaty_rect, false, false);
+            align_rect_edge_y(rect, stationaty_rect, true, false);
+        }
+        
+        else if(alignment == RectAlignment::TOP_align_LEFT) {
+            align_rect_edge_x(rect, stationaty_rect, false, true);
+            align_rect_edge_y(rect, stationaty_rect, true, true);
+        }
+        else if(alignment == RectAlignment::TOP_align_RIGHT) {
+            align_rect_edge_x(rect, stationaty_rect, true, false);
+            align_rect_edge_y(rect, stationaty_rect, true, true);
+        }
+        else if(alignment == RectAlignment::BOTTOM_align_LEFT) {
+            align_rect_edge_x(rect, stationaty_rect, false, true);
+            align_rect_edge_y(rect, stationaty_rect, false, false);
+        }
+        else if(alignment == RectAlignment::BOTTOM_align_RIGHT) {
+            align_rect_edge_x(rect, stationaty_rect, true, false);
+            align_rect_edge_y(rect, stationaty_rect, false, false);
+        }
+        else {
+            ThrowNotImplemented();
+        }
+    }
+
+
+
 namespace __layout__ {
+    /**
+     * A space element is the core builing block of an interface
+     * It specifies how large a certain element can be(max and minimum size)
+    */
+    struct SpaceElement {
+        int min_size = 0; // The minimum size in pixels
+        int max_size = 1000000; // (max size in pixels, default basically inf.)
+        int size_pick_priority = 0; // The ones with highest priority get their size picked first
+        float weight = 1.0; // If multiple elements have the same priority and have to share space, it is distributed by weight
+        SpaceElement() {}
+        SpaceElement(int min_size_, int max_size_, int size_pick_priority_, float weight_) {
+            min_size = min_size_;
+            max_size = max_size_;
+            size_pick_priority = size_pick_priority_;
+            weight = weight_;
+        }
+        bool operator<(const SpaceElement& other) const {
+            return size_pick_priority < other.size_pick_priority;
+        }
+        bool operator>(const SpaceElement& other) const {
+            return size_pick_priority > other.size_pick_priority;
+        }
+    };
+
+    /**
+     * Sort space elements by priority, with highest priority first
+     *  returns vector with indicies about how priorities are grouped
+    */ 
+    std::vector<std::vector<int>> _group_elements_by_priority(std::vector<SpaceElement> space_elements) {
+        if(space_elements.size() == 0) {
+            return {};
+        }
+        std::vector<std::pair<SpaceElement, int>> vec = vicmil::vec_sort_descend_and_get_indecies(space_elements);
+        std::vector<std::vector<int>> return_vec = {{}};
+        int current_priority = vec[0].first.size_pick_priority;
+        for(int i = 0; i < vec.size(); i++) {
+            if(current_priority == vec[i].first.size_pick_priority) {
+                return_vec.back().push_back(vec[i].second);
+            }
+            else {
+                return_vec.push_back({vec[i].second});
+                current_priority = vec[i].first.size_pick_priority;
+            }
+        }
+        return return_vec;
+    }
+    /**
+     * Only keep elements in priority_groups that will fit(and remove the rest)
+    */ 
+    void _trim_priority_groups(std::vector<std::vector<int>>& priority_groups, 
+                                const std::vector<SpaceElement>& space_elements, 
+                                int max_size) {
+        if(space_elements.size() == 0) {
+            return;
+        }
+        // Get how many priority groups will fit
+        int group_count = 0;
+        int space_left = max_size;
+        while(true) {
+            int group_space = 0;
+            for(int i = 0; i < priority_groups[group_count].size(); i++) {
+                group_space += space_elements[priority_groups[group_count][i]].max_size;
+            }
+            if(group_space > space_left) {
+                break;
+            }
+            space_left -= group_space;
+            group_count++;
+        }
+        priority_groups.resize(group_count + 1);
+
+        // Get how many elements in the last group that will fit
+        std::vector<int>& last_priority_group = priority_groups.back();
+        for(int i = 0; i < last_priority_group.size(); i++) {
+            int size = space_elements[last_priority_group[i]].min_size;
+            if(size > space_left) {
+                last_priority_group.resize(i);
+                return;
+            }
+            space_left -= size;
+        }
+    }
+    /**
+     * Sum the total weight of elements in priority group that has not been assigned any space left
+    */
+    float _get_priority_group_weight(const std::vector<SpaceElement>& space_elements, 
+                                    std::vector<int>& priority_group, 
+                                    const std::vector<int>& assigned_space_vec) {
+        float total_weight = 0;
+        for(int i = 0; i < priority_group.size(); i++) {
+            int index = priority_group[i];
+            if(assigned_space_vec[index] == 0) {
+                total_weight += space_elements[index].weight;
+            }
+        }
+        return total_weight;
+    }
+    /**
+     * Assigns space to a list of space elements
+     * The ones with the highest priority will be assigned their space first(max space)
+     * If there is any space left, the rest will be divided by weight
+    */
+    std::vector<int> assign_space(const std::vector<SpaceElement>& space_elements, int max_size) {
+        if(space_elements.size() == 0) {
+            Print("no space elements");
+            return {};
+        }
+        // Group elements by priority
+        std::vector<std::vector<int>> priority_groups = _group_elements_by_priority(space_elements);
+        _trim_priority_groups(priority_groups, space_elements, max_size);
+        std::vector<int> return_vec = std::vector<int>(space_elements.size(), 0);
+
+        // Assign space to higher priority groups
+        int space_left = max_size;
+        for(int i = 0; i < priority_groups.size() - 1; i++) {
+            for(int j = 0; j < priority_groups[i].size(); j++) {
+                Print("Assign space to higher priority group");
+                int index = priority_groups[i][j];
+                return_vec[index] = space_elements[index].max_size;
+                space_left-= space_elements[index].max_size;
+            }
+        }
+
+        // Assign space to lower priority groups based on weight
+        std::vector<int>& last_priority_group = priority_groups.back();
+        
+        while(true) {
+            // If the size is less than the weighted
+            bool stop = true;
+            float total_weight = _get_priority_group_weight(space_elements, last_priority_group, return_vec);
+            int space_left_copy = space_left;
+            if(total_weight == 0) {
+                Print("total weight zero");
+                return return_vec;
+            }
+            for(int i = 0; i < last_priority_group.size(); i++) {
+                int index = last_priority_group[i];
+                int size = space_left_copy * space_elements[index].weight / total_weight;
+                if(return_vec[index] == 0 && size <= space_elements[index].min_size) {
+                    Print("Assign space according to min space");
+                    return_vec[index] = space_elements[index].min_size;
+                    space_left-= space_elements[index].min_size;
+                    stop = false;
+                }
+            }
+            if(stop) {
+                break;
+            }
+        }
+        while(true) {
+            // If the size is more than the weighted
+            bool stop = true;
+            float total_weight = _get_priority_group_weight(space_elements, last_priority_group, return_vec);
+            int space_left_copy = space_left;
+            if(total_weight == 0) {
+                Print("total weight zero");
+                return return_vec;
+            }
+            for(int i = 0; i < last_priority_group.size(); i++) {
+                int index = last_priority_group[i];
+                int size = space_left_copy * space_elements[index].weight / total_weight;
+                if(return_vec[index] == 0 && size >= space_elements[index].max_size) {
+                    Print("Assign space according to max space");
+                    return_vec[index] = space_elements[index].max_size;
+                    space_left-= space_elements[index].max_size;
+                    stop = false;
+                }
+            }
+            if(stop) {
+                break;
+            }
+        }
+
+        // Assign accordning to weight
+        float total_weight = _get_priority_group_weight(space_elements, last_priority_group, return_vec);
+        if(total_weight == 0) {
+            Print("total weight zero");
+            return return_vec;
+        }
+        int space_left_copy = space_left;
+        for(int i = 0; i < last_priority_group.size(); i++) {
+            Print("Assign space according to weight");
+            int index = last_priority_group[i];
+            int size = space_left_copy * space_elements[index].weight / total_weight;
+            return_vec[index] = size;
+        }
+        return return_vec;
+    }
+    void TEST_assign_space() {
+        std::vector<SpaceElement> space_elements = {
+            SpaceElement(),
+            SpaceElement(),
+            SpaceElement()
+        };
+        int max_size = 1000;
+        std::vector<int> space = assign_space(space_elements, max_size);
+        AssertEq(space[0], space[1], 1.5);
+        AssertEq(space[1], space[2], 1.5);
+        AssertEq(space[0] + space[1] + space[2], max_size, 3);
+    }
+    AddTest(TEST_assign_space);
+
+    /**
+     * A rectangle on the screen
+     * The screen can be split into a set of rectangles!
+    */
+    struct LayoutRectProperties {
+        SpaceElement width;
+        SpaceElement height;
+        bool split_horizontal = true; // Otherwise split vertical
+        std::vector<int> children_indecies = {};
+    };
 
     /**
      * You can add attached elements to window elements; 
@@ -110,753 +432,295 @@ namespace __layout__ {
         virtual void updated_position_event() = 0; // Called when position is updated
     };
 
-    struct _WindowLayoutElement {
-        RectT<int> pixel_position = RectT<int>(0, 0, 100, 100);
-        int min_width = 0;
-        int max_width = -1; // -1 means max size
-        int min_height = 0;
-        int max_height = -1; // -1 means max size
-        double weight = 1;
-        int priority = 0;
-        bool split_horizontal = true; // Otherwise split vertical
-        std::vector<int> children_indecies = {};
-        int parent_index = -1;
-        std::weak_ptr<class AttachedElement> anchor_element = std::weak_ptr<AttachedElement>();
-        std::weak_ptr<class AttachedElement> widget_element = std::weak_ptr<AttachedElement>();
-    };
-
-    struct _WindowLayout {
-    public:
-        std::map<int, _WindowLayoutElement> _layout_elements = {};
-        int _elements_counter = 0;
-        bool element_exists(int index) {
-            return _layout_elements.count(index) != 0;
-        }
-    };
-
     /**
-     * A rectangle on the screen
-     * The screen can be split into a set of rectangles!
+     * The class determining how the window is organized
     */
-    class WindowLayoutElement {
-    public:
-        std::weak_ptr<class _WindowLayout> _layout_ref = std::weak_ptr<class _WindowLayout>();
-        int _element_index = -1;
-        // Can be split vertical, or horizontal
-        // The screen will be split according to:
-        // First it will be assigned to elements with absolute pixel count
-        // Second if there is space, the rest will go to weighted elements
+    struct _WindowLayout {
+        int _elements_counter = 0;
+        std::map<int, RectT<int>> layout_position;
+        std::map<int, LayoutRectProperties> layout_properties;
+        std::map<int, int> layout_parent;
+        std::map<int, std::weak_ptr<AttachedElement>> anchors;
+        std::map<int, std::weak_ptr<AttachedElement>> widgets;
 
-        WindowLayoutElement _get_window_layout_element(int index) {
-            WindowLayoutElement new_element;
-            new_element._element_index = index;
-            new_element._layout_ref = _layout_ref;
-            return new_element;
+        _WindowLayout() {
+            layout_position[0] = RectT<int>(0, 0, 1000, 1000);
+            layout_properties[0] = LayoutRectProperties();
+            layout_parent[0] = 0;
+            _elements_counter++;
         }
 
-        int set_vertical_split() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _layout_ref.lock()->_layout_elements[_element_index].split_horizontal = false;
-            return 0;
-        }
-        int set_horizontal_split() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _layout_ref.lock()->_layout_elements[_element_index].split_horizontal = true;
-            return 0;
-        }
-
-        // Set the desired pixel dimensions(set -1 for unspecified)
-        int set_size(int min_width, int max_width, int min_height, int max_height) {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            element.min_width = min_width;
-            element.max_width = max_width;
-            element.min_height = min_height;
-            element.max_height = max_height;
-            return 0;
-        }
-        int set_size(int width, int height) {
-            return set_size(width, width, height, height);
-        }
-        int set_width(int min_width, int max_width) {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            return set_size(min_width, max_width, element.min_height, element.max_height);
-        }
-        int set_height(int min_height, int max_height) {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            return set_size(element.min_width, element.max_width, min_height, max_height);
-        }
-
-        // Default is 0. The order to hide elements if necessary, lowest first
-        //  (in case of twist, it will hide the last child element first)
-        int set_priority_level(int priority) {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _layout_ref.lock()->_layout_elements[_element_index].priority = priority;
-            return 0;
-        }
-
-        // Where the element is on screen
-        RectT<int> get_position() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return RectT<int>(0, 0, 0, 0);
-            }
-            return _layout_ref.lock()->_layout_elements[_element_index].pixel_position;
-        }
-
-        // Set a class to be called each time the element is updated
-        int set_widget_element(std::weak_ptr<AttachedElement> widget_element_) {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _layout_ref.lock()->_layout_elements[_element_index].widget_element = widget_element_;
-            return 0;
-        }
-
-        // Set a class to be called each time the element is updated
-        int set_anchor_element(std::weak_ptr<AttachedElement> anchor_element_) {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _layout_ref.lock()->_layout_elements[_element_index].anchor_element = anchor_element_;
-            return 0;
-        }
-
-
-        // Get the element sizes based on min-max requirements
-        static std::vector<int> _get_element_sizes(
-            const std::vector<int>& size_min, 
-            const std::vector<int>& size_max, 
-            const std::vector<double>& weight,
-            int total_size_) {
-            Assert(total_size_ >= vicmil::vec_sum(size_min));
-
-            std::vector<int> return_vec = {};
-            return_vec.resize(weight.size(), -1);
-
-            int current_total_size = total_size_;
-            double current_total_weight = vicmil::vec_sum(weight);
-
-            // Iterate until everyone meets their minimum requirements
-            bool stop = false;
-            while(stop == false && current_total_size > 0 && current_total_weight > 0) {
-                stop = true;
-                int size_left = current_total_size;
-                double weight_left = current_total_weight;
-                for(int i = 0; i < weight.size(); i++) {
-                    if(return_vec[i] != -1) {
-                        continue; // Already set
-                    }
-                    int size = current_total_size * weight[i] / current_total_weight;
-                    if(size < size_min[i]) {
-                        // If some go below requirements, they get their required size and are done!
-                        return_vec[i] = size_min[i];
-                        size_left -= size_min[i];
-                        weight_left -= weight[i];
-                        stop = false; // We are clearly not done! Do another iteration
-                    }
+        std::vector<SpaceElement> _get_children_space_elements(int index) {
+            LayoutRectProperties& properties = layout_properties[index];
+            std::vector<SpaceElement> children_space_elements = std::vector<SpaceElement>(properties.children_indecies.size());
+            if(properties.split_horizontal) {
+                for(int i = 0; i < properties.children_indecies.size(); i++) {
+                    int child_index = properties.children_indecies[i];
+                    children_space_elements[i] = layout_properties[child_index].width;
                 }
-                current_total_size = size_left;
-                current_total_weight = weight_left;
-            }
-            
-            // Iterate until everyone meets their maximum requirements
-            stop = false;
-            while(stop == false && current_total_size > 0 && current_total_weight > 0) {
-                stop = true;
-                int size_left = current_total_size;
-                double weight_left = current_total_weight;
-                for(int i = 0; i < weight.size(); i++) {
-                    if(return_vec[i] != -1) {
-                        continue; // Already set
-                    }
-                    int size = current_total_size * weight[i] / current_total_weight;
-                    if(size > size_max[i]) {
-                        // If some go below requirements, they get their required size and are done!
-                        return_vec[i] = size_max[i];
-                        size_left -= size_max[i];
-                        weight_left -= weight[i];
-                        stop = false; // We are clearly not done! Do another iteration
-                    }
-                }
-                current_total_size = size_left;
-                current_total_weight = weight_left;
-            }
-            
-            // Assign the rest according to weight
-            for(int i = 0; i < weight.size(); i++) {
-                if(return_vec[i] != -1) {
-                    continue; // Already set
-                }
-                int size = current_total_size * weight[i] / current_total_weight;
-                return_vec[i] = size;
-            }
-
-            return return_vec;
-        }
-
-        /**
-         * Hide elements with lowest priority first
-         * (Hide means setting min size and max size to 0)
-        */
-        static void _hide_elements_if_all_doesnt_fit(
-            std::vector<int>& size_min, 
-            std::vector<int>& size_max, 
-            const std::vector<int>& priorities,
-            int total_size) {
-            int min_size_sum = vicmil::vec_sum(size_min);
-            if(min_size_sum <= total_size) {
-                return; // Everything already fits!
-            }
-
-            DebugExpr(min_size_sum);
-            DebugExpr(total_size);
-            Assert(min_size_sum >= 0);
-            Assert(total_size >= 0);
-            Assert(size_min.size() > 0);
-            Assert(size_max.size() > 0);
-            Assert(priorities.size() > 0);
-            
-            // Sort the elements based on priorities
-            std::vector<std::pair<int, int>> priorities_with_index = vicmil::vec_sort_descend_and_get_indecies(priorities);
-            Assert(priorities_with_index.size() > 0);
-
-            int i = priorities_with_index.size() - 1;
-            // Start from the back and reduce elements until they are in acceptable range
-            while(min_size_sum > total_size) {
-                Assert(i >= 0);
-                int index = priorities_with_index[i].second;
-                min_size_sum -= size_min[index];
-                size_min[index] = 0;
-                size_max[index] = 0;
-                i -= 1;
-            }
-        }
-
-        /**
-         * Get a list of all childrens minimum sizes
-         *  (in the horizontal or vertical direction depending on split direction)
-         * eg. {child0.min_width, child1.min_width, child2.min_width, ...}
-        */
-        std::vector<int> get_min_size_of_all_children() {
-            std::vector<int> return_vec = {};
-
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            for(int i = 0; i < element.children_indecies.size(); i++) {
-                _WindowLayoutElement& child = _layout_ref.lock()->_layout_elements[element.children_indecies[i]];
-                if(element.split_horizontal) {
-                    return_vec.push_back(child.min_width);
-                }
-                else {
-                    return_vec.push_back(child.min_height);
-                }
-            }
-            return return_vec;
-        }
-
-        /**
-         * Get a list of all childrens maximum sizes
-         *  (in the horizontal or vertical direction depending on split direction)
-         * eg. {child0.max_width, child1.max_width, child2.max_width, ...}
-        */
-        std::vector<int> get_max_size_of_all_children() {
-            std::vector<int> return_vec = {};
-
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            for(int i = 0; i < element.children_indecies.size(); i++) {
-                _WindowLayoutElement& child = _layout_ref.lock()->_layout_elements[element.children_indecies[i]];
-                if(element.split_horizontal) {
-                    if(child.max_width < 0) {
-                        return_vec.push_back(element.pixel_position.w );
-                    }
-                    else {
-                        return_vec.push_back(child.max_width);
-                    }
-                }
-                else {
-                    if(child.max_height < 0) {
-                        return_vec.push_back(element.pixel_position.h );
-                    }
-                    else {
-                        return_vec.push_back(child.max_height);
-                    }
-                }
-            }
-            return return_vec;
-        }
-
-        int _parent_update() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            if(element.parent_index >= 0) {
-                _get_window_layout_element(element.parent_index)._update();
-            }
-            return 0;
-        }
-
-        int update() {
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            DebugExpr(element.pixel_position.to_string());
-            _parent_update();
-            DebugExpr(element.pixel_position.to_string());
-            _update();
-            DebugExpr(element.pixel_position.to_string());
-            return 0;
-        }
-
-        void _set_child_position(int pos, int size, int child_index) {
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            _WindowLayoutElement& child = _layout_ref.lock()->_layout_elements[element.children_indecies[child_index]];
-
-            vicmil::RectT<int> new_position = element.pixel_position;
-            if(size == 0) {
-                new_position = RectT<int>(0, 0, 0, 0);
-            }
-            else if(element.split_horizontal) {
-                new_position.x = pos;
-                new_position.w = size;
-                if(child.max_height >= 0) {
-                    new_position.h = std::min(element.pixel_position.h, child.max_height);
-                }
+                return children_space_elements;
             }
             else {
-                new_position.y = pos;
-                new_position.h = size;
-                if(child.max_width >= 0) {
-                    new_position.w = std::min(element.pixel_position.w, child.max_width);
+                for(int i = 0; i < properties.children_indecies.size(); i++) {
+                    int child_index = properties.children_indecies[i];
+                    children_space_elements[i] = layout_properties[child_index].height;
                 }
+                return children_space_elements;
             }
-
-            //if(child.pixel_position != new_position) {
-            child.pixel_position = new_position;
-            _get_window_layout_element(element.children_indecies[child_index])._update();
-            //}
         }
-
-        // Update children elements
-        int _update() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
-            }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            
-            // Call attached element
-            if(!element.anchor_element.expired()) {
-                element.anchor_element.lock()->updated_position_event();
-            }
-            if(!element.widget_element.expired()) {
-                element.widget_element.lock()->updated_position_event();
-            }
-            
-
-            // Fetch children parameters
-            std::vector<int> children_size_min = get_min_size_of_all_children();
-            std::vector<int> children_size_max = get_max_size_of_all_children();
-
-            std::vector<int> children_priority_list = {};
-            std::vector<double> children_weight_list = {};
-            for(int i = 0; i < element.children_indecies.size(); i++) {
-                _WindowLayoutElement& child = _layout_ref.lock()->_layout_elements[element.children_indecies[i]];
-                children_priority_list.push_back(child.priority);
-                children_weight_list.push_back(child.weight);
-            }
-            Assert(children_size_min.size() == children_size_max.size());
-            Assert(children_size_min.size() == children_priority_list.size());
-            Assert(children_size_min.size() == children_weight_list.size());
-
-            int total_size = -1;
-            if(element.split_horizontal) {
-                total_size = element.pixel_position.w;
+        void _update_child(int index, int size, int pos) {
+            LayoutRectProperties& child_properties = layout_properties[index];
+            LayoutRectProperties& parent_properties = layout_properties[layout_parent[index]];
+            RectT<int> parent_pos = layout_position[layout_parent[index]];
+            if(parent_properties.split_horizontal) {
+                layout_position[index] = RectT<int>(pos + parent_pos.x, parent_pos.y, size, parent_pos.h);
             }
             else {
-                total_size = element.pixel_position.h;
+                layout_position[index] = RectT<int>(parent_pos.x, parent_pos.y + pos, parent_pos.w, size);
             }
-            Assert(total_size >= 0);
-
-            _hide_elements_if_all_doesnt_fit(
-                children_size_min,
-                children_size_max,
-                children_priority_list,
-                total_size
-            );
-
-            std::vector<int> sizes = _get_element_sizes(
-                children_size_min,
-                children_size_max,
-                children_weight_list,
-                total_size
-            );
-
-            int pos;
-            if(element.split_horizontal) {
-                pos = element.pixel_position.x;
-            } else {
-                pos = element.pixel_position.y;
-            }
-
-            for(int i = 0; i < element.children_indecies.size(); i++) {
-                _set_child_position(pos, sizes[i], i);
-                pos += sizes[i];
-            }
-
-            return 0;
+            update_rect(index);
         }
-
-        int erase() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
+        void _update_attached_elements(int index) {
+            if(anchors.count(index) != 0 && !anchors[index].expired()) {
+                anchors[index].lock()->updated_position_event();
             }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            WindowLayoutElement parent_ = _get_window_layout_element(element.parent_index);
-            
-            _erase();
-
-            parent_._update();
-            return 0;
-        }
-
-        int erase_children() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
+            if(widgets.count(index) != 0 && !widgets[index].expired()) {
+                widgets[index].lock()->updated_position_event();
             }
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-
-            // Delete all children
-            while(element.children_indecies.size() > 0) {
-                int child_element_index = element.children_indecies.back();
-                _get_window_layout_element(child_element_index)._erase();
+        } 
+        void update_rect(int index) {
+            _update_attached_elements(index);
+            LayoutRectProperties& properties = layout_properties[index];
+            std::vector<SpaceElement> space_elements = _get_children_space_elements(index);
+            std::vector<int> spaces = {};
+            if(properties.split_horizontal) {
+                spaces = assign_space(space_elements, layout_position[index].w);
             }
-            return 0;
-        }
-
-        // Delete the element and all its children
-        int _erase() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return -1;
+            else {
+                spaces = assign_space(space_elements, layout_position[index].h);
             }
-
-            _WindowLayoutElement& element = _layout_ref.lock()->_layout_elements[_element_index];
-            _WindowLayoutElement& parent_element = _layout_ref.lock()->_layout_elements[element.parent_index];
-
-            // Remove reference from parent
-            for(int i = 0; i < parent_element.children_indecies.size(); i++) {
-                if(parent_element.children_indecies[i] == _element_index) {
-                    vicmil::vec_remove(parent_element.children_indecies, i);
-                    break;
-                }
+            int pos = 0;
+            for(int i = 0; i < properties.children_indecies.size(); i++) {
+                int child_index = properties.children_indecies[i];
+                PrintExpr(child_index << " " << pos << " " << spaces[i]);
+                _update_child(child_index, spaces[i], pos);
+                pos += spaces[i];
             }
-            
-            erase_children();
-
-            // Remove window element from elements
-            _layout_ref.lock()->_layout_elements.erase(_element_index);
-            return 0;
-        }
-
-        // Create a new window element at bottom if vertical split / to the left if horizontal split
-        WindowLayoutElement create_child_element() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return WindowLayoutElement();
-            }
-            int child_index = _layout_ref.lock()->_elements_counter;
-            _layout_ref.lock()->_elements_counter++;
-            _layout_ref.lock()->_layout_elements[child_index] = _WindowLayoutElement();
-            _layout_ref.lock()->_layout_elements[child_index].parent_index = _element_index;
-
-            _layout_ref.lock()->_layout_elements[_element_index].children_indecies.push_back(child_index);
-            return _get_window_layout_element(child_index);
-        }
-        std::vector<WindowLayoutElement> get_children() {
-            if(_layout_ref.expired() || !_layout_ref.lock()->element_exists(_element_index)) {
-                return {};
-            }
-            std::vector<int>& children_indecies = _layout_ref.lock()->_layout_elements[_element_index].children_indecies;
-            std::vector<WindowLayoutElement> children = {};
-            for(int i = 0; i < children_indecies.size(); i++) {
-                children.push_back(_get_window_layout_element(children_indecies[i]));
-            }
-            return children;
-        }
-    };
-
-    class WindowLayout {
-    public:
-        std::shared_ptr<_WindowLayout> _window_layout = std::make_shared<_WindowLayout>();
-        WindowLayoutElement _entire_window_element;
-
-        WindowLayout() {
-            _window_layout->_layout_elements[_window_layout->_elements_counter] = _WindowLayoutElement();
-            _entire_window_element = WindowLayoutElement();
-            _entire_window_element._element_index = _window_layout->_elements_counter;
-            _entire_window_element._layout_ref = _window_layout;
-            _window_layout->_elements_counter++;
         }
 
         // The width and height of the layout in pixels
         void set_size(int width, int height) {
-            _window_layout->_layout_elements[_entire_window_element._element_index].pixel_position =
-                RectT<int>(0,0,width,height);
-            _entire_window_element.update();
+            layout_position[0] = RectT<int>(0, 0, width, height);
+            update_rect(0);
         }
+        int create_child(int index) {
+            int child_index = _elements_counter;
+            _elements_counter++;
+            layout_properties[index].children_indecies.push_back(child_index);
 
-        // Get the window element for the entire screen
-        WindowLayoutElement get_window_element() {
-            return _entire_window_element;
+            // Setup child
+            layout_properties[child_index] = LayoutRectProperties();
+            layout_parent[child_index] = index;
+            layout_position[child_index] = RectT<int>(0, 0, 0, 0);
+            return child_index;
         }
     };
-    void TEST1_WindowLayout() {
-        WindowLayout window_layout = WindowLayout();
-        WindowLayoutElement whole_screen = window_layout.get_window_element();
-        WindowLayoutElement left_screen = whole_screen.create_child_element();
-        WindowLayoutElement right_screen = whole_screen.create_child_element();
-        window_layout.set_size(1000, 800);
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 500, 800));
-        Assert(right_screen.get_position() == RectT<int>(500, 0, 500, 800));
 
-        whole_screen.set_vertical_split();
-        whole_screen.update();
+    class LayoutRectReference {
+    public:
+        int index = 0;
+        std::weak_ptr<_WindowLayout> window_layout = std::weak_ptr<_WindowLayout>();
+        LayoutRectReference() {}
+        LayoutRectReference(int index_, std::weak_ptr<_WindowLayout> window_layout_) {
+            index = index_;
+            window_layout = window_layout_;
+        }
+        void update() {
+            window_layout.lock()->update_rect(window_layout.lock()->layout_parent[index]);
+        }
+        RectT<int> get_position() {
+            return window_layout.lock()->layout_position[index];
+        }
+        RectT<int> get_entire_window_position() {
+            return window_layout.lock()->layout_position[0];
+        }
+        LayoutRectProperties& get_properties() {
+            return window_layout.lock()->layout_properties[index];
+        }
 
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 1000, 400));
-        Assert(right_screen.get_position() == RectT<int>(0, 400, 1000, 400));
+        LayoutRectReference get_reference(int index_) {
+            return LayoutRectReference(index_, window_layout);
+        }
+        LayoutRectReference create_child() {
+            int child_index = window_layout.lock()->create_child(index);
+            return get_reference(child_index);
+        }
+    };
+
+    /**
+     * The class holding a reference to WindowLayout
+     * (This is the start class for all layout things)
+    */
+    class WindowLayout {
+    public:
+        std::shared_ptr<_WindowLayout> _window_layout = std::make_shared<_WindowLayout>();
+        LayoutRectReference get_entire_window_reference() {
+            return LayoutRectReference(0, _window_layout);
+        }
+        void set_size(int width, int height) {
+            _window_layout->set_size(width, height);
+        }
+    };
+
+    /**
+     * Ensure that it is the right format for having a middle element
+    */
+    void _make_middle_element_format(LayoutRectReference rect_reference) {
+        rect_reference.get_properties().split_horizontal = true;
+        std::vector<int>& children_horizontal = rect_reference.get_properties().children_indecies;
+        if(children_horizontal.size() > 3) {
+            children_horizontal.resize(3);
+        }
+        while(children_horizontal.size() < 3) {
+            rect_reference.create_child();
+        }
+        LayoutRectReference mid_child = rect_reference.get_reference(children_horizontal[1]);
+        mid_child.get_properties().split_horizontal = false;
+        std::vector<int>& children_vertical = mid_child.get_properties().children_indecies;
+        if(children_vertical.size() > 3) {
+            children_vertical.resize(3);
+        }
+        while(children_vertical.size() != 3) {
+            mid_child.create_child();
+        }
     }
-    AddTest(TEST1_WindowLayout);
 
-    void TEST2_WindowLayout() {
-        WindowLayout window_layout = WindowLayout();
-        WindowLayoutElement whole_screen = window_layout.get_window_element();
-        WindowLayoutElement left_screen = whole_screen.create_child_element();
-        left_screen.set_size(200, 200);
-        WindowLayoutElement right_screen = whole_screen.create_child_element();
-        window_layout.set_size(1000, 800);
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 200, 200));
-        Assert(right_screen.get_position() == RectT<int>(200, 0, 800, 800));
+    /**
+     * Returns an element that is in the middle, with buffers to the sides
+    */
+    LayoutRectReference make_element_in_middle(LayoutRectReference rect_reference, 
+        SpaceElement left, SpaceElement right, 
+        SpaceElement top, SpaceElement bottom) {
+        _make_middle_element_format(rect_reference);
+        std::vector<int>& children_horizontal = rect_reference.get_properties().children_indecies;
+        Assert(children_horizontal.size() == 3);
 
-        left_screen.set_size(600, 600);
-        left_screen.update();
-        DebugExpr(left_screen.get_position().to_string());
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 600));
-        Assert(right_screen.get_position() == RectT<int>(600, 0, 400, 800));
+        LayoutRectReference mid_child = rect_reference.get_reference(children_horizontal[1]);
+        std::vector<int>& children_vertical = mid_child.get_properties().children_indecies;
+        Assert(children_vertical.size() == 3);
 
-        // Assert right one disappears if both won't fit(and they have same priority)
-        right_screen.set_size(600, 600);
-        right_screen.update();
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 600));
-        DebugExpr(right_screen.get_position().to_string());
-        Assert(right_screen.get_position() == RectT<int>(0, 0, 0, 0));
-
-        // Assert left one dissapears if right one has higher priority
-        right_screen.set_priority_level(2);
-        right_screen.update();
-        DebugExpr(right_screen.get_position().to_string());
-        DebugExpr(left_screen.get_position().to_string());
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 0, 0));
-        Assert(right_screen.get_position() == RectT<int>(0, 0, 600, 600));
+        // Get children references(Those that are relevant)
+        LayoutRectReference left_child = rect_reference.get_reference(children_horizontal[0]);
+        LayoutRectReference right_child = rect_reference.get_reference(children_horizontal[2]);
+        LayoutRectReference top_child = rect_reference.get_reference(children_vertical[0]);
+        LayoutRectReference bottom_child = rect_reference.get_reference(children_vertical[2]);
+        LayoutRectReference mid_mid_child = rect_reference.get_reference(children_vertical[1]);
         
-        // Assert that left one gets back if we delete the right
-        right_screen.erase();
-        Assert(left_screen.get_position() == RectT<int>(0, 0, 600, 600));
-        Assert(right_screen.get_position() == RectT<int>(0, 0, 0, 0));
+        // Setup properties
+        rect_reference.get_properties().split_horizontal = true;
+        mid_child.get_properties().width = SpaceElement(0, 100000, 0, 1);
+        mid_child.get_properties().height = SpaceElement(0, 100000, 0, 1);
+        mid_child.get_properties().split_horizontal = false;
+
+        left_child.get_properties().width = left;
+        right_child.get_properties().width = right;
+        top_child.get_properties().height = top;
+        bottom_child.get_properties().height = bottom;
+        return mid_mid_child;
     }
-    AddTest(TEST2_WindowLayout);
 
+    LayoutRectReference make_element_in_middle_from_weight(
+        LayoutRectReference rect_reference, float left, float right, float top, float bottom) {
+        SpaceElement left_ = SpaceElement(0, 100000, 0, left);
+        SpaceElement right_ = SpaceElement(0, 100000, 0, right);
+        SpaceElement top_ = SpaceElement(0, 100000, 0, top);
+        SpaceElement bottom_ = SpaceElement(0, 100000, 0, bottom);
+        return make_element_in_middle(rect_reference, left_, right_, top_, bottom_);
+    }
 
-    struct _Anchor: public AttachedElement {
-        WindowLayoutElement attached_element;
-        bool attach_top = false;
-        bool attach_left = false;
-        bool dock_horizontal = false; // Otherwise dock vertical
-        WindowLayout window_layout = WindowLayout();
-        WindowLayoutElement alignment_element_left;
-        WindowLayoutElement alignment_element_right;
-        WindowLayoutElement alignment_element_top;
-        WindowLayoutElement alignment_element_bottom;
-        WindowLayoutElement anchor_element;
-        void _setup_left_alignment(RectT<int> attached_element_position,
-            int element_max_width) {
-            int size = 0;
-            if(attach_left && dock_horizontal) {
-                size = attached_element_position.min_x() - element_max_width;
-            }
-            else if(!attach_left && dock_horizontal) {
-                size = attached_element_position.max_x();
-            }
-            else if(attach_left && !dock_horizontal) {
-                size = attached_element_position.min_x();
-            }
-            else if(!attach_left && !dock_horizontal) {
-                size = attached_element_position.max_x() - element_max_width;
-            }
-            size = std::max(size, 0);
-            alignment_element_left.set_width(size, size);
-        }
-        void _setup_right_alignment(
-            RectT<int> entire_window_position,
-            RectT<int> attached_element_position
-        ) {
-            int size = 0;
-            if(attach_left && dock_horizontal) {
-                size = entire_window_position.w - attached_element_position.min_x();
-            }
-            size = std::max(size, 0);
-            alignment_element_right.set_width(size, size);
-        }
-        void _setup_top_alignment(RectT<int> attached_element_position,
-            int element_max_height) {
-            int size = 0;
-            if(attach_top && dock_horizontal) {
-                size = attached_element_position.min_y();
-            }
-            else if(!attach_top && dock_horizontal) {
-                size = attached_element_position.max_y() - element_max_height;
-            }
-            else if(attach_top && !dock_horizontal) {
-                size = attached_element_position.min_y() - element_max_height;
-            }
-            else if(!attach_top && !dock_horizontal) {
-                size = attached_element_position.max_y();
-            }
-            size = std::max(size, 0);
-            alignment_element_top.set_height(size, size);
+    LayoutRectReference make_element_in_middle_from_size(
+        LayoutRectReference rect_reference, int left, int right, int top, int bottom) {
+        SpaceElement left_ = SpaceElement(left, left, 1, 1);
+        SpaceElement right_ = SpaceElement(right, right, 1, 1);
+        SpaceElement top_ = SpaceElement(top, top, 1, 1);
+        SpaceElement bottom_ = SpaceElement(bottom, bottom, 1, 1);
+        return make_element_in_middle(rect_reference, left_, right_, top_, bottom_);
+    }
 
-        }
-        void _setup_bottom_alignment(
-            RectT<int> entire_window_position,
-            RectT<int> attached_element_position
-        ) {
-            int size = 0;
-            if(attach_top && !dock_horizontal) {
-                size = entire_window_position.h - attached_element_position.min_y();
-            }
-            size = std::max(size, 0);
-            alignment_element_bottom.set_height(size, size);
-        }
-        void _update_anchor_alignment() {
-            RectT<int> entire_window_position = window_layout.get_window_element().get_position();
+    /**
+     * Anchors can be attached to window elements, they float above. This can be great for menus for example!
+    */
+
+    class _Anchor: public AttachedElement {
+    public:
+        LayoutRectReference attached_element;
+        RectAlignment alignment;
+        
+        std::shared_ptr<_WindowLayout> window_layout = std::make_shared<_WindowLayout>();
+        LayoutRectReference anchor_element;
+
+        RectT<int> _get_anchor_pos() { // Get the anchor position
             RectT<int> attached_element_position = attached_element.get_position();
-            _WindowLayoutElement& element_ = window_layout._window_layout->_layout_elements[anchor_element._element_index];
+            int element_max_width = attached_element.get_properties().width.max_size;
+            int element_max_height = attached_element.get_properties().height.max_size;
+            RectT<int> new_anchor_pos = RectT<int>(0, 0, element_max_width, element_max_height);
+            align_rect(new_anchor_pos, attached_element_position, alignment);
+            cut_rect_to_fit(new_anchor_pos, attached_element.get_entire_window_position());
 
-            if(attached_element_position.w == 0 || attached_element_position.h == 0) {
-                // Hide the anchor(by making no space left for it)
-                alignment_element_left.set_width(entire_window_position.w, entire_window_position.w);
-                return;
-            }
+            return new_anchor_pos;
+        }
+        void _update_side_buffers() {
+            RectT<int> entire_window_pos = attached_element.get_entire_window_position();
+            RectT<int> anchor_pos = _get_anchor_pos();
+            int buffer_left = anchor_pos.min_x() - entire_window_pos.min_x();
+            int buffer_right = entire_window_pos.max_x() - anchor_pos.max_x();
+            int buffer_up = anchor_pos.min_y() - entire_window_pos.min_y();
+            int buffer_down = entire_window_pos.max_y() - anchor_pos.max_y();
 
-            int element_max_width = element_.max_width;
-            int element_max_height = element_.max_height;
-            if(element_max_width < 0) {
-                element_max_width = entire_window_position.w;
-            }
-            if(element_max_height < 0) {
-                element_max_height = entire_window_position.h;
-            }
-            _setup_left_alignment(attached_element_position, element_max_width);
-            _setup_right_alignment(entire_window_position, attached_element_position);
-            _setup_top_alignment(attached_element_position, element_max_height);
-            _setup_bottom_alignment(entire_window_position, attached_element_position);
+            LayoutRectReference entire_window = LayoutRectReference(0, window_layout);
+            anchor_element = make_element_in_middle_from_size(entire_window, 
+                buffer_left,
+                buffer_right,
+                buffer_up,
+                buffer_down
+            );
         }
         void updated_position_event() override {
             Print("Anchor update()");
             // Update the entire window position
-            RectT<int> entire_window_position = attached_element._layout_ref.lock()->_layout_elements[0].pixel_position;
-            window_layout._window_layout->_layout_elements[0].pixel_position = entire_window_position;
-            _update_anchor_alignment();
-            window_layout.get_window_element().update();
-        }
-        _Anchor() {
-            // Setup alignment correctly
-            WindowLayoutElement entire_window_element = window_layout.get_window_element();
-            entire_window_element.set_horizontal_split();
-            alignment_element_left = entire_window_element.create_child_element();
-            WindowLayoutElement temp = entire_window_element.create_child_element();
-            alignment_element_right = entire_window_element.create_child_element();
-
-            temp.set_vertical_split();
-            alignment_element_top = temp.create_child_element();
-            anchor_element = temp.create_child_element();
-            alignment_element_bottom = temp.create_child_element();
-
-            alignment_element_left.set_priority_level(1);
-            alignment_element_right.set_priority_level(1);
-            alignment_element_top.set_priority_level(1);
-            alignment_element_bottom.set_priority_level(1);
+            _update_side_buffers();
+            window_layout->update_rect(0);
         }
     };
-    /**
-     * Anchors can be attached to window elements, they float above. This can be great for menus for example!
-    */
     class Anchor {
-    public:
-        std::shared_ptr<_Anchor> _anchor = std::shared_ptr<_Anchor>();
-        Anchor(WindowLayoutElement layout_element) {
-            _anchor = std::make_shared<_Anchor>(_Anchor());
-            _anchor->attached_element = layout_element;
-            layout_element.set_anchor_element(_anchor);
+        std::shared_ptr<_Anchor> anchor;
+        void set_layout_element(LayoutRectReference layout_element_) {
+            anchor->attached_element = layout_element_;
+            layout_element_.window_layout.lock()->anchors[layout_element_.index] = anchor;
         }
-        Anchor() {}
-        WindowLayoutElement get_window_layout_element() {
-            return _anchor->anchor_element;
+        LayoutRectReference get_anchor_element() {
+            return anchor->anchor_element;
         }
-        void set_size(int width, int height) {
-            _anchor->anchor_element.set_size(width, height);
-        }
-        void align_top() {
-            _anchor->attach_top = true;
-        }
-        void align_bottom() {
-            _anchor->attach_top = false;
-        }
-        void align_right() {
-            _anchor->attach_left = false;
-        }
-        void align_left() {
-            _anchor->attach_left = true;
-        }
-        void attach_horizontal() {
-            _anchor->dock_horizontal = true;
-        }
-        void attach_vertical() {
-            _anchor->dock_horizontal = false;
-        }
-        void update() {
-            _anchor->anchor_element.update();
+        void set_anchor_alignment(RectAlignment alignment) {
+            if(anchor->alignment != alignment) {
+                anchor->alignment = alignment;
+                anchor->window_layout->update_rect(0);
+            }
         }
     };
 
-    /**
-     * An interface class for a mouse, contains basic functions
-    */
-    class MouseInputInterface {
-    public:
-        virtual int x() = 0;
-        virtual int y() = 0;
-        virtual bool has_clicked() = 0;
-    };
     class _Widget: public AttachedElement {
     public:
         bool _is_selected = false;
-        bool _is_clicked = false;
         bool _is_last_clicked_widget = false; 
-        WindowLayoutElement _layout_element; // [Optional] attached layout element
+        bool _was_clicked = false;
+        LayoutRectReference _layout_element; // [Optional] attached layout element
         double depth = 0; // In case two widgets are ontop of each other, the one with lowest depth will be ontop
         RectT<int> position = RectT<int>(0, 0, 0, 0);
         void updated_position_event() override { // Called when layout element changes position
             position = _layout_element.get_position();
         }
+        _Widget() {}
     };
     /**
      * A widget is an element on the screen that can be interacted with, for example pressed on with the mouse
@@ -866,22 +730,35 @@ namespace __layout__ {
     class Widget {
     public:
         std::shared_ptr<_Widget> widget;
-
         Widget() {
             widget = std::make_shared<_Widget>();
         }
-        
         bool is_selected() {return widget->_is_selected;} // If the mouse is hovering above widget
-        bool is_clicked() {return widget->_is_clicked;} // If the mouse just clicked on widget
+        bool was_clicked() {return widget->_was_clicked; }
         bool is_last_clicked_widget() {return widget->_is_last_clicked_widget;} // If mouse havn't pressed anything since it last pressed widget
-
-        // Called each time WidgetManager is updated
-        virtual void update() {}
-
-        void set_layout_element(WindowLayoutElement layout_element_) {
+        
+        // The layout element will update the position of the widget automatically as it moves
+        void set_layout_element(LayoutRectReference layout_element_) {
             widget->_layout_element = layout_element_;
-            layout_element_.set_widget_element(widget);
+            layout_element_.window_layout.lock()->widgets[layout_element_.index] = widget;
+            widget->position = layout_element_.get_position();
         }
+        LayoutRectReference get_layout_element() {
+            return widget->_layout_element;
+        }
+        // Manually set widget position
+        void set_position(RectT<int> position) {
+            widget->position = position;
+        }
+        RectT<int> get_position() {
+            return widget->position;
+        }
+    };
+
+    struct MouseInput {
+        int x = 0;
+        int y = 0;
+        bool was_clicked = false;
     };
     /**
      * The window manager keeps track of all the widgets, like which widget is the one the user is pointing at
@@ -890,80 +767,55 @@ namespace __layout__ {
     */
     class WidgetManager {
     public:
-        std::list<std::weak_ptr<Widget>> widgets = {};
-        std::weak_ptr<MouseInputInterface> mouse_input;
+        std::list<std::weak_ptr<_Widget>> widgets = {};
         WidgetManager() {}
-        WidgetManager(std::weak_ptr<MouseInputInterface> mouse_input_) {
-            mouse_input = mouse_input_;
+        void add_widget(const Widget& new_widget) {
+            widgets.push_back(new_widget.widget);
         }
-        void add_widget(std::weak_ptr<Widget> new_widget) {
-            widgets.push_back(new_widget);
-        }
-        void _remove_expired_widgets() {
+        void _reset_widget_states(MouseInput mouse_input) {
             auto it = widgets.begin();
             while(it != widgets.end()) {
-                if((*it).expired()) {
-                    auto it_copy = it;
-                    it++;
-                    widgets.erase(it_copy);
-                    continue;
-                }
-                it++;
-            }
-        }
-        void _find_selected_widget() {
-            // Fetch mouse data
-            int mouse_position_x = mouse_input.lock()->x();
-            int mouse_position_y = mouse_input.lock()->y();
-            bool mouse_has_clicked = mouse_input.lock()->has_clicked();
-
-            // Find top widget where the mouse is
-            bool found_top = false;
-            auto top_widget = widgets.begin();
-            auto it = widgets.begin();
-            while(it != widgets.end()) {
-                _Widget& widget = *(*it).lock()->widget;
+                _Widget& widget = *(*it).lock();
                 widget._is_selected = false;
-                widget._is_clicked = false;
-                if(mouse_has_clicked) {
+                widget._was_clicked = false;
+                if(mouse_input.was_clicked) {
                     widget._is_last_clicked_widget = false;
                 }
-
-                if(widget.position.is_inside_rect(mouse_position_x, mouse_position_y)) {
-                    if(!found_top) {
-                        top_widget = it;
-                        found_top = true;
-                    }
-                    else if(widget.depth < (*top_widget).lock()->widget->depth) {
-                        top_widget = it;
-                        found_top = true;
-                    }
-                }
                 it++;
             }
-            if(found_top) {
-                _Widget& widget = *(*top_widget).lock()->widget;
-                widget._is_selected = true;
-                if(mouse_has_clicked) {
-                    widget._is_last_clicked_widget = true;
-                    widget._is_clicked = true;
-                }
+        }
+        void _set_selected_widget(std::weak_ptr<_Widget> widget_, MouseInput mouse_input) {
+            if(widget_.expired()) {
+                return;
+            }
+            _Widget& widget = *widget_.lock();
+            widget._is_selected = true;
+            if(mouse_input.was_clicked) {
+                widget._is_last_clicked_widget = true;
+                widget._was_clicked = true;
             }
         }
-        void _update_all_widgets() {
+        // Returns an expired weak ptr if it fails
+        std::weak_ptr<_Widget> _get_selected_widget(MouseInput mouse_input) {
+            std::weak_ptr<_Widget> selected_widget = std::weak_ptr<_Widget>();
             auto it = widgets.begin();
             while(it != widgets.end()) {
-                (*it).lock()->update();
+                _Widget& widget = *(*it).lock();
+                if(widget.position.is_inside_rect(mouse_input.x, mouse_input.y)) {
+                    if(selected_widget.expired() || widget.depth < selected_widget.lock()->depth) {
+                        selected_widget = *it;
+                    }
+                }
                 it++;
             }
+            return selected_widget;
         }
-        int update() {
-            if(mouse_input.expired()) {
-                return -1;
-            }
-            _remove_expired_widgets();
-            _find_selected_widget();
-            _update_all_widgets();
+        int update(MouseInput mouse_input) {
+            // Update widgets
+            remove_expired_from_list(widgets);
+            _reset_widget_states(mouse_input);
+            std::weak_ptr<_Widget> selected_widget = _get_selected_widget(mouse_input);
+            _set_selected_widget(selected_widget, mouse_input);
             return 0;
         }
     };

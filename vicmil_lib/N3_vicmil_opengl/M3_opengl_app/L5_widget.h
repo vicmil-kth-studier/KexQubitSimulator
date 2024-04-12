@@ -4,19 +4,19 @@
 namespace vicmil {
 
 std::vector<vicmil::general_gpu_setup::Triangle> visualize_layout_element(
-    vicmil::__layout__::WindowLayoutElement layout_element,
+    vicmil::__layout__::LayoutRectReference layout_element,
     double depth = 0,
     int seed = 123) {
-    std::vector<vicmil::__layout__::WindowLayoutElement> unparsed_elements = {layout_element};
+    std::vector<int> unparsed_elements = {layout_element.index};
 
     vicmil::RandomNumberGenerator rand_gen = vicmil::RandomNumberGenerator();
     rand_gen.set_seed(seed);
     std::vector<vicmil::general_gpu_setup::Triangle> triangles = {};
 
     while(unparsed_elements.size() > 0) {
-        vicmil::__layout__::WindowLayoutElement element_ = unparsed_elements.back();
+        vicmil::__layout__::LayoutRectReference element_ = layout_element.get_reference(unparsed_elements.back());
         unparsed_elements.pop_back();
-        std::vector<vicmil::__layout__::WindowLayoutElement> children = element_.get_children();
+        const std::vector<int>& children = element_.get_properties().children_indecies;
         if(children.size() > 0) {
             vicmil::vec_extend(unparsed_elements, children);
         }
@@ -67,159 +67,17 @@ bool window_resized(const std::vector<SDL_Event>& events) {
     return false;
 } 
 
-class MouseInputWrapper: public vicmil::__layout__::MouseInputInterface {
-public:
-    vicmil::SDLUserInputRef user_input;
-    MouseInputWrapper(vicmil::SDLUserInputRef _user_input) {
-        user_input = _user_input;
-    }
-    int x() override {
-        return user_input.get_mouse_state().x();
-    }
-    int y() override {
-        return user_input.get_mouse_state().y();
-    }
-    bool has_clicked() override {
-        return vicmil::mouse_left_clicked(user_input.get_recent_events());
-    }
-};
-
-/*class _Widget: public vicmil::__layout__::AttachedElement {
-public:
-    double depth = 0; // To differentiate which widget is on top in case of conflict(lower depth is the top one)
-    bool on_top = false;
-    RectT<int> position = RectT<int>(0, 0, 0, 0);
-    RectT<int> entire_window_position = RectT<int>(0, 0, 0, 0);
-    vicmil::__layout__::WindowLayoutElement _layout_element;
-    void update() override { // Called each time _layout_element updates position
-        position = _layout_element.get_position();
-        entire_window_position = _layout_element._get_window_layout_element(0).get_position();
-    }
-};
-
-class Widget {
-public:
-    std::shared_ptr<_Widget> widget;
-    vicmil::SDLUserInputRef user_input;
-    Widget() {
-        widget = std::make_shared<_Widget>();
-    }
-    void set_layout_element(vicmil::__layout__::WindowLayoutElement layout_element_) {
-        widget->_layout_element = layout_element_;
-        layout_element_.set_attached_element(widget);
-    }
-    void set_depth(double depth) {
-        widget->depth = depth;
-    }
-    void set_user_input_reference(vicmil::SDLUserInputRef user_input_) {
-        user_input = user_input_;
-    }
-    bool is_top_widget() {
-        return widget->on_top;
-    }
-    RectT<int> get_position() {
-        return widget->position;
-    }
-    // The widgets tick update is called every tick
-    virtual void tick_update() = 0;
-};
-
-class WidgetUpdater {
-public:
-    vicmil::SDLUserInputRef user_input;
-
-    WidgetUpdater() {}
-    WidgetUpdater(vicmil::SDLUserInputRef user_input_) {
-        user_input = user_input_;
-    }
-
-    // Keeps track of widgets and updates them every tick
-    // Keeps track of which widget is on top
-    std::list<std::weak_ptr<Widget>> widgets = {};
-    void _remove_expired_widgets() {
-        auto it = widgets.begin();
-        while(it != widgets.end()) {
-            if((*it).expired()) {
-                Print("Removed expired widget!");
-                auto it_copy = it;
-                it++;
-                widgets.erase(it_copy);
-                continue;
-            }
-            it++;
-        }
-    }
-    void _update_top_widget() {
-        int mouse_position_x = user_input.get_mouse_state().x();
-        int mouse_position_y = user_input.get_mouse_state().y();
-        bool found_top = false;
-        auto top_widget = widgets.begin();
-        auto it = widgets.begin();
-        //Print("Fetch top widget");
-        while(it != widgets.end()) {
-            _Widget& widget = *(*it).lock()->widget;
-            widget.on_top = false;
-            if(widget.position.is_inside_rect(mouse_position_x, mouse_position_y)) {
-                if(!found_top) {
-                    top_widget = it;
-                    found_top = true;
-                }
-                else if(widget.depth < (*top_widget).lock()->widget->depth) {
-                    top_widget = it;
-                    found_top = true;
-                }
-            }
-            it++;
-        }
-        if(found_top) {
-            //Print("Found top widget!");
-            // Set the top widget to be ontop
-            (*top_widget).lock()->widget->on_top = true;
-        }
-    }
-    void _update_all_widgets() {
-        auto it = widgets.begin();
-        while(it != widgets.end()) {
-            (*it).lock()->tick_update();
-            it++;
-        }
-    }
-    void update() {
-        _remove_expired_widgets();
-        _update_top_widget();
-        _update_all_widgets();
-    }
-    void add_widget(std::weak_ptr<Widget> new_widget) {
-        widgets.push_back(new_widget);
-    }
-};*/
+vicmil::__layout__::MouseInput get_mouse_input(vicmil::SDLUserInputRef user_input) {
+    vicmil::__layout__::MouseInput mouse_input;
+    mouse_input.was_clicked = mouse_left_clicked(user_input.get_recent_events());
+    mouse_input.x = user_input.get_mouse_state().x();
+    mouse_input.y = user_input.get_mouse_state().y();
+    return mouse_input;
+}
 
 /*class Button: public Widget {
-public:
-    bool button_pressed = false;
-    bool last_widget_pressed = false;
-    void tick_update() override {
-        bool left_button_clicked = mouse_left_clicked(user_input.get_recent_events());
-        PrintExpr(is_top_widget());
-        PrintExpr(last_widget_pressed);
-        if(is_top_widget() && left_button_clicked) {
-            button_pressed = true;
-            last_widget_pressed = true;
-            button_pressed_event();
-        }
-        else if(!is_top_widget() && left_button_clicked) {
-            button_pressed = false;
-            last_widget_pressed = false;
-            something_else_pressed_event();
-        }
-        if(!is_top_widget() || !user_input.get_mouse_state().left_button_is_pressed()) {
-            button_pressed = false;
-        }
-    }
-    virtual void button_pressed_event() {} // Called each time the button is pressed(mouse left click)
-    virtual void something_else_pressed_event() {} // Called each time the button was pressed, but then something else got pressed
 };
-/*class Slider: Widget {
+class Slider: Widget {
 
 };
 class Switch: Widget {

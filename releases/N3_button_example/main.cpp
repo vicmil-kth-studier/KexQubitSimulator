@@ -1,64 +1,39 @@
-#include "layout.h"
+#define USE_DEBUG
+#define DEBUG_KEYWORDS "!vicmil_lib,/source,main(),init()" 
+#include "../../source/quantum_computer_include.h"
 
-static MainWindow main_window_layout;
-static vicmil::GPUSetup setup;
 bool init_called = false;
-vicmil::SDLUserInputManager user_input_manager;
-vicmil::__layout__::WidgetManager widget_manager;
-std::shared_ptr<vicmil::MouseInputWrapper> mouse_input;
-
-class MyButton: public vicmil::__layout__::Widget {
-public:
-    void update() override {
-        if(is_clicked()) {
-            Print("Button clicked!");
-        }
-    }
-};
-std::shared_ptr<MyButton> my_button;
-
-void create_button() {
-    my_button = std::make_shared<MyButton>();
-    my_button->set_layout_element(main_window_layout.button_element);
-    widget_manager.add_widget(my_button);
-}
-
+vicmil::general_app_setup::App app = vicmil::general_app_setup::App();
+vicmil::__layout__::Widget button_widget = vicmil::__layout__::Widget();
 
 void render() {
-    DisableLogging;
-    START_TRACE_FUNCTION();
-    setup.window_renderer.set_to_current_window();
     vicmil::clear_screen();
 
-    std::vector<vicmil::general_gpu_setup::Triangle> triangles = {};
-    if(my_button->is_last_clicked_widget()) {
-        vicmil::Rect position = vicmil::get_opengl_position(main_window_layout.button_element);
-        auto triangles2 = vicmil::general_gpu_setup::triangles_from_2d_color_rect(position,
-        glm::vec4(1.0, 0.0, 0.0, 1.0), 0);
-        vicmil::vec_extend(triangles, triangles2);
-    }
-    else {
-        vicmil::Rect position = vicmil::get_opengl_position(main_window_layout.button_element);
-        auto triangles2 = vicmil::general_gpu_setup::triangles_from_2d_color_rect(position,
-        glm::vec4(0.0, 1.0, 0.0, 1.0), 0);
-        vicmil::vec_extend(triangles, triangles2);
-    }
-    
-    vicmil::general_gpu_setup::set_triangles(setup, triangles);
-    setup.draw();
+    // Draw layout
+    app.draw_add(vicmil::visualize_layout_element(app.get_layout_reference(), 0.1, 10));
 
-    setup.show_on_screen();
-    END_TRACE_FUNCTION();
+    // Draw button
+    glm::vec4 color = glm::vec4(0.0, 1.0, 0.0, 1.0);
+    if(button_widget.is_last_clicked_widget()) {
+        color = glm::vec4(1.0, 0.0, 0.0, 1.0);
+    }
+    vicmil::Rect position = app.get_opengl_position(button_widget.get_position());
+    app.draw_add(vicmil::general_gpu_setup::triangles_from_2d_color_rect(position, color, 0));
+
+    // Display on screen
+    app.draw();
+    app.show_on_screen();
 }
 
 void init() {
-    Debug("Start!");
-    setup = vicmil::general_gpu_setup::create_gpu_setup();
-    user_input_manager = vicmil::SDLUserInputManager::create_user_input_manager();
-    main_window_layout = MainWindow();
-    mouse_input = std::make_shared<vicmil::MouseInputWrapper>(user_input_manager.get_reference());
-    widget_manager = vicmil::__layout__::WidgetManager(mouse_input);
-    create_button();
+    Print("Init!");
+    // Init app
+    app.init();
+
+    // Create button
+    vicmil::__layout__::LayoutRectReference button_element = 
+        vicmil::__layout__::make_element_in_middle_from_weight(app.get_layout_reference(), 1, 1, 1, 1);
+    button_widget = app.create_widget(button_element);
 }
 
 void update(){
@@ -66,20 +41,7 @@ void update(){
         init_called = true;
         init();
     }
-    user_input_manager.fetch_events_and_update();
-    widget_manager.update();
-    const std::vector<SDL_Event>& events = user_input_manager.get_reference().get_recent_events();
-    if(vicmil::window_resized(events)) {
-        int w;
-        int h;
-        vicmil::get_window_size(setup.window_renderer.window, &w, &h);
-        main_window_layout.layout.set_size(w, h);
-        glViewport(0,0,(GLsizei)w,(GLsizei)h);
-    }
-
-    #ifdef __EMSCRIPTEN__
-    main_app.layout.set_size(vicmil::browser::window_width, vicmil::browser::window_height);
-    #endif
+    app.update();
 
     render();
 };
@@ -105,4 +67,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 };
-

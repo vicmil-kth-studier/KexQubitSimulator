@@ -4,63 +4,30 @@
 
 static vicmil::GPUSetup setup;
 bool init_called = false;
+vicmil::SDLUserInputManager user_input_manager;
+vicmil::WidgetUpdater tick_updater;
 
-vicmil::Rect get_opengl_position(vicmil::__layout__::WindowLayoutElement element_) {
-    vicmil::RectT<int> full_window = element_._layout_ref.lock()->_layout_elements[0].pixel_position;
-    vicmil::RectT<int> rect = element_.get_position();
-    vicmil::Rect return_rect;
-    return_rect.w = (2*(double)rect.w) / full_window.w;
-    return_rect.h = (2*(double)rect.h) / full_window.h;
-    return_rect.x = (2*((double)rect.x) / full_window.w) - 1;
-    return_rect.y = (2*((double)rect.y) / full_window.h) - 1;
-    return_rect.y = -return_rect.y - return_rect.h;
-    return return_rect;
-}
-
-std::vector<vicmil::general_gpu_setup::Triangle> visualize_layout_element(
-    vicmil::__layout__::WindowLayoutElement layout_element,
-    double depth = 0,
-    int seed = 123) {
-    std::vector<vicmil::__layout__::WindowLayoutElement> unparsed_elements = {layout_element};
-
-    vicmil::RandomNumberGenerator rand_gen = vicmil::RandomNumberGenerator();
-    rand_gen.set_seed(seed);
-    std::vector<vicmil::general_gpu_setup::Triangle> triangles = {};
-
-    while(unparsed_elements.size() > 0) {
-        vicmil::__layout__::WindowLayoutElement element_ = unparsed_elements.back();
-        unparsed_elements.pop_back();
-        std::vector<vicmil::__layout__::WindowLayoutElement> children = element_.get_children();
-        if(children.size() > 0) {
-            vicmil::vec_extend(unparsed_elements, children);
-        }
-        else {
-            vicmil::Rect rect = get_opengl_position(element_);
-            glm::dvec4 color = glm::dvec4(
-                rand_gen.rand_between_0_and_1(), 
-                rand_gen.rand_between_0_and_1(), 
-                rand_gen.rand_between_0_and_1(), 1.0);
-            rand_gen.rand();
-            rand_gen.rand();
-            rand_gen.rand();
-            rand_gen.rand();
-            vicmil::vec_extend(
-                triangles,
-                vicmil::general_gpu_setup::triangles_from_2d_color_rect(rect, color, depth)
-            );
-        }
+class DropDownButton: public vicmil::Button {
+public:
+    vicmil::__layout__::Anchor dropdown_anchor = vicmil::__layout__::Anchor();
+    vicmil::__layout__::WindowLayoutElement dropdown;
+    void button_pressed_event() override {
+        dropdown_anchor.set_size(100, 100);
+        dropdown_anchor.update();
     }
-    return triangles;
-}
+    void something_else_pressed_event() override {
+        dropdown_anchor.set_size(0, 0);
+        dropdown_anchor.update();
+    }
+};
 
 class TopBar {
 public:
     vicmil::__layout__::WindowLayoutElement layout_element;
     vicmil::__layout__::WindowLayoutElement file_settings;
     vicmil::__layout__::WindowLayoutElement edit_settings;
-    vicmil::__layout__::Anchor dropdown_anchor = vicmil::__layout__::Anchor();
-    vicmil::__layout__::WindowLayoutElement dropdown;
-
+    DropDownButton dropdown_button;
+    
     void setup() {
         // Setup layout element
         layout_element.erase_children();
@@ -84,17 +51,20 @@ public:
         edit_settings = settings_bar.create_child_element();
         edit_settings.set_width(40, 40);
 
-        dropdown_anchor = vicmil::__layout__::Anchor(edit_settings);
-        dropdown_anchor.set_attach_left();
-        dropdown_anchor.set_attach_bottom();
-        dropdown = dropdown_anchor.get_window_layout_element();
-        dropdown.set_width(80, 80);
-        dropdown.set_height(66, 66);
+        dropdown_button.dropdown_anchor = vicmil::__layout__::Anchor(edit_settings);
+        dropdown_button.dropdown_anchor.set_attach_left();
+        dropdown_button.dropdown_anchor.set_attach_bottom();
+        dropdown_button.dropdown = dropdown_button.dropdown_anchor.get_window_layout_element();
+        dropdown_button.dropdown.set_width(80, 80);
+        dropdown_button.dropdown.set_height(66, 66);
 
-        dropdown.set_vertical_split();
-        dropdown.create_child_element().set_height(22, 22);
-        dropdown.create_child_element().set_height(22, 22);
-        dropdown.create_child_element().set_height(22, 22);
+        dropdown_button.set_layout_element(edit_settings.create_child_element());
+        dropdown_button.set_user_input_reference(user_input_manager.get_reference());
+
+        dropdown_button.dropdown.set_vertical_split();
+        dropdown_button.dropdown.create_child_element().set_height(22, 22);
+        dropdown_button.dropdown.create_child_element().set_height(22, 22);
+        dropdown_button.dropdown.create_child_element().set_height(22, 22);
     }
 };
 
@@ -128,10 +98,11 @@ public:
         return return_rect;
     }
     void draw() {
+        user_input_manager.fetch_events_and_update();
         triangles = {};
-        triangles = visualize_layout_element(entire_window, 0.1, 10);
+        triangles = vicmil::visualize_layout_element(entire_window, 0.1, 10);
         vicmil::vec_extend(
-            triangles, visualize_layout_element(top_bar.dropdown, 0, 5)
+            triangles, vicmil::visualize_layout_element(top_bar.dropdown_button.dropdown, 0, 5)
         );
         //PrintExpr(top_bar.dropdown.get_position().to_string());
 
@@ -158,14 +129,7 @@ void render() {
 void init() {
     Debug("Start!");
     setup = vicmil::general_gpu_setup::create_gpu_setup();
-
-    //std::vector<vicmil::general_gpu_setup::Triangle> triangles = 
-    //    vicmil::general_gpu_setup::triangles_from_2d_texture_rect(vicmil::Rect(-0.2, -0.2, 0.4, 0.4), vicmil::Rect(0, 0, 1, 1));
-
-    //Print(triangles[0].to_string());
-    //Print(triangles[1].to_string());
-
-    //vicmil::general_gpu_setup::set_triangles(setup, triangles);
+    user_input_manager = vicmil::SDLUserInputManager::create_user_input_manager();
 }
 
 void update(){
@@ -173,22 +137,14 @@ void update(){
         init_called = true;
         init();
     }
-    std::vector<SDL_Event> events = vicmil::update_SDL();
-    for(int i = 0; i < events.size(); i++) {
-        SDL_Event event = events[i];
-        if(event.type == SDL_WINDOWEVENT &&
-            event.window.event == SDL_WINDOWEVENT_RESIZED) {
-            Print("Window Resize!");
-            int w;
-            int h;
-            vicmil::get_window_size(setup.window_renderer.window, &w, &h);
-            main_app.layout.set_size(w, h);
-            PrintExpr(w);
-            PrintExpr(h);
-            PrintExpr(main_app.top_bar.layout_element.get_position().w);
-            PrintExpr(main_app.entire_window.get_position().w);
-            glViewport(0,0,(GLsizei)w,(GLsizei)h);
-        }
+    user_input_manager.fetch_events_and_update();
+    const std::vector<SDL_Event>& events = user_input_manager.get_reference().get_recent_events();
+    if(vicmil::window_resized(events)) {
+        int w;
+        int h;
+        vicmil::get_window_size(setup.window_renderer.window, &w, &h);
+        main_app.layout.set_size(w, h);
+        glViewport(0,0,(GLsizei)w,(GLsizei)h);
     }
 
     #ifdef __EMSCRIPTEN__

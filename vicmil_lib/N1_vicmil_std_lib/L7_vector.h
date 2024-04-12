@@ -1,5 +1,6 @@
 #pragma once
 #include "L6_basic_math.h"
+#include <list>
 
 namespace vicmil {
 
@@ -150,5 +151,22 @@ extend_vec({1, 2}, {3, 4, 5}) -> {1, 2, 3, 4, 5}
 template <class T>
 void vec_extend(std::vector<T>& vec, const std::vector<T>& vec_add){
     vec.insert(vec.end(), vec_add.begin(), vec_add.end());
+}
+
+/**
+ * Removes all expired weak ptrs from a list
+*/
+template<class T>
+void remove_expired_from_list(std::list<std::weak_ptr<T>>& list_){
+    auto it = list_.begin();
+    while(it != list_.end()) {
+        if((*it).expired()) {
+            auto it_copy = it;
+            it++;
+            list_.erase(it_copy);
+            continue;
+        }
+        it++;
+    }
 }
 }
