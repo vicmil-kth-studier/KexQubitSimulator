@@ -52,7 +52,7 @@ public:
         setup = vicmil::general_gpu_setup::create_gpu_setup();
         user_input_manager = vicmil::SDLUserInputManager::create_user_input_manager();
         widget_manager = vicmil::__layout__::WidgetManager();
-        window_layout.set_size(1000, 1000);
+        window_layout.set_size(1024, 1024);
         setup.window_renderer.set_to_current_window();
     }
     vicmil::__layout__::LayoutRectReference get_layout_reference() {

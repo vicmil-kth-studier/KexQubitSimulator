@@ -9,6 +9,13 @@
 #include <filesystem>
 
 namespace vicmil {
+
+#ifdef DEBUG_KEYWORDS
+    const std::string __debug_keywords_raw__ = DEBUG_KEYWORDS;
+#else
+    const std::string __debug_keywords_raw__ = ".";
+#endif
+
 #ifdef USE_DEBUG
 /**
  * Evaluates to nothing if debug is disabled
@@ -102,6 +109,7 @@ inline bool match_ignore(const std::string str, const std::vector<std::string>& 
     bool return_val = false;
     for(int i = 0; i < keywords.size(); i++) {
         std::string keyword = keywords[i];
+        //Print(i << " '" << keyword << "'");
         if(keyword == "" || keyword == " ") {
             continue;
         }
@@ -136,13 +144,7 @@ inline bool match_ignore(const std::string str, const std::vector<std::string>& 
 
 }
 
-#ifdef DEBUG_KEYWORDS
-    const std::string __debug_keywords_raw__ = DEBUG_KEYWORDS;
-#else
-    const std::string __debug_keywords_raw__ = "vicmil_lib";
-#endif
-
-const std::vector<std::string> __debug_keywords__ = vicmil::split_string(__debug_keywords_raw__, ',');
+const std::vector<std::string> __debug_keywords__ = vicmil::split_string(vicmil::__debug_keywords_raw__, ',');
 
 
 namespace vicmil {
@@ -150,7 +152,7 @@ namespace vicmil {
 /**
  * Disables all the logging inside a function
 */
-#define DisableLogging const std::vector<std::string> __debug_keywords__ = {};
+#define DisableLogging const std::vector<std::string> __debug_keywords__ = {"."};
 #else
 /**
  * Disables all the logging inside a function

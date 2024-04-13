@@ -31,7 +31,9 @@ namespace __layout__ {
      *  returns vector with indicies about how priorities are grouped
     */ 
     std::vector<std::vector<int>> _group_elements_by_priority(std::vector<SpaceElement> space_elements) {
+        START_TRACE_FUNCTION();
         if(space_elements.size() == 0) {
+            END_TRACE_FUNCTION();
             return {};
         }
         std::vector<std::pair<SpaceElement, int>> vec = vicmil::vec_sort_descend_and_get_indecies(space_elements);
@@ -46,6 +48,7 @@ namespace __layout__ {
                 current_priority = vec[i].first.size_pick_priority;
             }
         }
+        END_TRACE_FUNCTION();
         return return_vec;
     }
     /**
@@ -54,12 +57,15 @@ namespace __layout__ {
     void _trim_priority_groups(std::vector<std::vector<int>>& priority_groups, 
                                 const std::vector<SpaceElement>& space_elements, 
                                 int max_size) {
+        START_TRACE_FUNCTION();
         if(space_elements.size() == 0) {
+            END_TRACE_FUNCTION();
             return;
         }
         // Get how many priority groups will fit
         int group_count = 0;
         int space_left = max_size;
+        Debug("Get group count");
         while(true) {
             int group_space = 0;
             for(int i = 0; i < priority_groups[group_count].size(); i++) {
@@ -70,6 +76,10 @@ namespace __layout__ {
             }
             space_left -= group_space;
             group_count++;
+            if(group_count >= priority_groups.size()) {
+                END_TRACE_FUNCTION();
+                return; // All elements fit!
+            }
         }
         priority_groups.resize(group_count + 1);
 
@@ -83,6 +93,7 @@ namespace __layout__ {
             }
             space_left -= size;
         }
+        END_TRACE_FUNCTION();
     }
     /**
      * Sum the total weight of elements in priority group that has not been assigned any space left
@@ -105,20 +116,24 @@ namespace __layout__ {
      * If there is any space left, the rest will be divided by weight
     */
     std::vector<int> assign_space(const std::vector<SpaceElement>& space_elements, int max_size) {
+        START_TRACE_FUNCTION();
         if(space_elements.size() == 0) {
-            Print("no space elements");
+            Debug("no space elements");
+            END_TRACE_FUNCTION();
             return {};
         }
         // Group elements by priority
+        Debug("Group elements by priority");
         std::vector<std::vector<int>> priority_groups = _group_elements_by_priority(space_elements);
         _trim_priority_groups(priority_groups, space_elements, max_size);
         std::vector<int> return_vec = std::vector<int>(space_elements.size(), 0);
 
         // Assign space to higher priority groups
+        Debug("Assign space to higher priority groups");
         int space_left = max_size;
         for(int i = 0; i < priority_groups.size() - 1; i++) {
             for(int j = 0; j < priority_groups[i].size(); j++) {
-                Print("Assign space to higher priority group");
+                Debug("Assign space to higher priority group");
                 int index = priority_groups[i][j];
                 return_vec[index] = space_elements[index].max_size;
                 space_left-= space_elements[index].max_size;
@@ -128,22 +143,24 @@ namespace __layout__ {
         // Assign space to lower priority groups based on weight
         std::vector<int>& last_priority_group = priority_groups.back();
         
+        Debug("If the size is less than the weighted");
         while(true) {
             // If the size is less than the weighted
             bool stop = true;
             float total_weight = _get_priority_group_weight(space_elements, last_priority_group, return_vec);
             int space_left_copy = space_left;
             if(total_weight == 0) {
-                Print("total weight zero");
+                Debug("total weight zero");
+                END_TRACE_FUNCTION();
                 return return_vec;
             }
             for(int i = 0; i < last_priority_group.size(); i++) {
                 int index = last_priority_group[i];
                 int size = space_left_copy * space_elements[index].weight / total_weight;
-                if(return_vec[index] == 0 && size <= space_elements[index].min_size) {
-                    Print("Assign space according to min space");
+                if(size > 0 && return_vec[index] == 0 && size <= space_elements[index].min_size) {
+                    Debug("Assign space according to min space");
                     return_vec[index] = space_elements[index].min_size;
-                    space_left-= space_elements[index].min_size;
+                    space_left -= space_elements[index].min_size;
                     stop = false;
                 }
             }
@@ -151,20 +168,23 @@ namespace __layout__ {
                 break;
             }
         }
+
+        Debug("If the size is more than the weighted");
         while(true) {
             // If the size is more than the weighted
             bool stop = true;
             float total_weight = _get_priority_group_weight(space_elements, last_priority_group, return_vec);
             int space_left_copy = space_left;
             if(total_weight == 0) {
-                Print("total weight zero");
+                Debug("total weight zero");
+                END_TRACE_FUNCTION();
                 return return_vec;
             }
             for(int i = 0; i < last_priority_group.size(); i++) {
                 int index = last_priority_group[i];
                 int size = space_left_copy * space_elements[index].weight / total_weight;
-                if(return_vec[index] == 0 && size >= space_elements[index].max_size) {
-                    Print("Assign space according to max space");
+                if(space_elements[index].max_size > 0 && return_vec[index] == 0 && size >= space_elements[index].max_size) {
+                    Debug("Assign space according to max space");
                     return_vec[index] = space_elements[index].max_size;
                     space_left-= space_elements[index].max_size;
                     stop = false;
@@ -176,9 +196,11 @@ namespace __layout__ {
         }
 
         // Assign accordning to weight
+        Debug("Assign accordning to weight");
         float total_weight = _get_priority_group_weight(space_elements, last_priority_group, return_vec);
         if(total_weight == 0) {
-            Print("total weight zero");
+            Debug("total weight zero");
+            END_TRACE_FUNCTION();
             return return_vec;
         }
         int space_left_copy = space_left;
@@ -188,6 +210,7 @@ namespace __layout__ {
             int size = space_left_copy * space_elements[index].weight / total_weight;
             return_vec[index] = size;
         }
+        END_TRACE_FUNCTION();
         return return_vec;
     }
     void TEST_assign_space() {
@@ -286,16 +309,18 @@ namespace __layout__ {
             LayoutRectProperties& properties = layout_properties[index];
             std::vector<SpaceElement> space_elements = _get_children_space_elements(index);
             std::vector<int> spaces = {};
+            Print("Assign space");
             if(properties.split_horizontal) {
                 spaces = assign_space(space_elements, layout_position[index].w);
             }
             else {
                 spaces = assign_space(space_elements, layout_position[index].h);
             }
+            Print("Update children");
             int pos = 0;
             for(int i = 0; i < properties.children_indecies.size(); i++) {
                 int child_index = properties.children_indecies[i];
-                PrintExpr(child_index << " " << pos << " " << spaces[i]);
+                //PrintExpr(child_index << " " << pos << " " << spaces[i]);
                 _update_child(child_index, spaces[i], pos);
                 pos += spaces[i];
             }
@@ -303,8 +328,10 @@ namespace __layout__ {
 
         // The width and height of the layout in pixels
         void set_size(int width, int height) {
+            START_TRACE_FUNCTION();
             layout_position[0] = RectT<int>(0, 0, width, height);
             update_rect(0);
+            END_TRACE_FUNCTION();
         }
         int create_child(int index) {
             int child_index = _elements_counter;
@@ -329,9 +356,14 @@ namespace __layout__ {
             window_layout = window_layout_;
         }
         void update() {
+            START_TRACE_FUNCTION();
             window_layout.lock()->update_rect(window_layout.lock()->layout_parent[index]);
+            END_TRACE_FUNCTION();
         }
         RectT<int> get_position() {
+            if(expired()) {
+                return RectT<int>(0, 0, 0, 0);
+            }
             return window_layout.lock()->layout_position[index];
         }
         RectT<int> get_entire_window_position() {
@@ -347,6 +379,15 @@ namespace __layout__ {
         LayoutRectReference create_child() {
             int child_index = window_layout.lock()->create_child(index);
             return get_reference(child_index);
+        }
+        bool expired() {
+            if(window_layout.expired()) {
+                return true;
+            }
+            if(window_layout.lock()->layout_properties.count(index) == 0) {
+                return true;
+            }
+            return false;
         }
     };
 
@@ -450,12 +491,15 @@ namespace __layout__ {
         RectAlignment alignment;
         
         std::shared_ptr<_WindowLayout> window_layout = std::make_shared<_WindowLayout>();
-        LayoutRectReference anchor_element;
+        LayoutRectReference anchor_element = LayoutRectReference();
 
         RectT<int> _get_anchor_pos() { // Get the anchor position
+            if(anchor_element.expired()) {
+                return RectT<int>(0, 0, 0, 0);
+            }
             RectT<int> attached_element_position = attached_element.get_position();
-            int element_max_width = attached_element.get_properties().width.max_size;
-            int element_max_height = attached_element.get_properties().height.max_size;
+            int element_max_width = anchor_element.get_properties().width.max_size;
+            int element_max_height = anchor_element.get_properties().height.max_size;
             RectT<int> new_anchor_pos = RectT<int>(0, 0, element_max_width, element_max_height);
             align_rect(new_anchor_pos, attached_element_position, alignment);
             cut_rect_to_fit(new_anchor_pos, attached_element.get_entire_window_position());
@@ -463,12 +507,22 @@ namespace __layout__ {
             return new_anchor_pos;
         }
         void _update_side_buffers() {
+            START_TRACE_FUNCTION();
+            if(attached_element.expired()) {
+                window_layout->set_size(0, 0);
+                return;
+            }
             RectT<int> entire_window_pos = attached_element.get_entire_window_position();
+            window_layout->layout_position[0] = entire_window_pos;
+
             RectT<int> anchor_pos = _get_anchor_pos();
-            int buffer_left = anchor_pos.min_x() - entire_window_pos.min_x();
-            int buffer_right = entire_window_pos.max_x() - anchor_pos.max_x();
-            int buffer_up = anchor_pos.min_y() - entire_window_pos.min_y();
-            int buffer_down = entire_window_pos.max_y() - anchor_pos.max_y();
+            int buffer_left =  std::max(0, anchor_pos.min_x() - entire_window_pos.min_x());
+            int buffer_right = std::max(0, entire_window_pos.max_x() - anchor_pos.max_x());
+            int buffer_up =    std::max(0, anchor_pos.min_y() - entire_window_pos.min_y());
+            int buffer_down =  std::max(0, entire_window_pos.max_y() - anchor_pos.max_y());
+
+            PrintExpr(anchor_pos.max_x());
+            PrintExpr(buffer_right);
 
             LayoutRectReference entire_window = LayoutRectReference(0, window_layout);
             anchor_element = make_element_in_middle_from_size(entire_window, 
@@ -477,28 +531,50 @@ namespace __layout__ {
                 buffer_up,
                 buffer_down
             );
+            END_TRACE_FUNCTION();
         }
         void updated_position_event() override {
-            Print("Anchor update()");
+            START_TRACE_FUNCTION();
             // Update the entire window position
             _update_side_buffers();
             window_layout->update_rect(0);
+            END_TRACE_FUNCTION();
         }
     };
     class Anchor {
-        std::shared_ptr<_Anchor> anchor;
+    public:
+        std::shared_ptr<_Anchor> _anchor = std::make_shared<_Anchor>();
         void set_layout_element(LayoutRectReference layout_element_) {
-            anchor->attached_element = layout_element_;
-            layout_element_.window_layout.lock()->anchors[layout_element_.index] = anchor;
+            detach();
+            _anchor->attached_element = layout_element_;
+            layout_element_.window_layout.lock()->anchors[layout_element_.index] = _anchor;
+            update();
+        }
+        void detach() {
+            if(!_anchor->attached_element.expired()) {
+                _anchor->attached_element.window_layout.lock()->anchors.erase(_anchor->attached_element.index);
+            }
+            _anchor->attached_element = LayoutRectReference();
+            update();
         }
         LayoutRectReference get_anchor_element() {
-            return anchor->anchor_element;
+            return _anchor->anchor_element;
+        }
+        void update() {
+            _anchor->_update_side_buffers();
+            _anchor->window_layout->update_rect(0);
         }
         void set_anchor_alignment(RectAlignment alignment) {
-            if(anchor->alignment != alignment) {
-                anchor->alignment = alignment;
-                anchor->window_layout->update_rect(0);
+            START_TRACE_FUNCTION();
+            if(_anchor->alignment != alignment) {
+                _anchor->alignment = alignment;
+                Print("update_rect");
+                _anchor->window_layout->update_rect(0);
             }
+            END_TRACE_FUNCTION();
+        }
+        RectT<int> get_position() {
+            return _anchor->anchor_element.get_position();
         }
     };
 
