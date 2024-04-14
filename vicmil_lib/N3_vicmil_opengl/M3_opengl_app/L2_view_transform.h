@@ -111,8 +111,8 @@ vicmil::Rect get_opengl_position(vicmil::RectT<int> rect, vicmil::RectT<int> ful
     return return_rect;
 }
 
-vicmil::Rect get_opengl_position(vicmil::__layout__::LayoutRectReference element_) {
-    vicmil::RectT<int> full_window = element_.get_entire_window_position();
+vicmil::Rect get_opengl_position(vicmil::LayoutRect element_) {
+    vicmil::RectT<int> full_window = element_.entire_window().get_position();
     vicmil::RectT<int> rect = element_.get_position();
     return get_opengl_position(rect, full_window);
 }

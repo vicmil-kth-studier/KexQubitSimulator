@@ -113,18 +113,13 @@ public:
 };
 /**
  * Manages the _SDLUserInput object. 
- * + Create references to the object using create_reference
+ * + get reference to the user input object using get_reference
  * + Update the user input state using fetch_events_and_update
 */
 class SDLUserInputManager {
 public:
-    std::shared_ptr<_SDLUserInput> user_input;
+    std::shared_ptr<_SDLUserInput> user_input = std::make_shared<_SDLUserInput>();
     SDLUserInputManager() {}
-    static SDLUserInputManager create_user_input_manager() {
-        SDLUserInputManager new_user_input_manager = SDLUserInputManager();
-        new_user_input_manager.user_input = std::make_shared<_SDLUserInput>();
-        return new_user_input_manager;
-    }
     void _update_keyboard_and_mouse_state() {
         user_input->last_captured_keyboard_state = KeyboardState();
         user_input->last_captured_mouse_state = MouseState();
@@ -140,6 +135,72 @@ public:
         SDLUserInputRef new_user_input_ref;
         new_user_input_ref._user_input = user_input;
         return new_user_input_ref;
+    }
+};
+
+/**
+ * Determine if the mouse left button has been pressed:
+ * Read here for more documentation: 
+ * https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlmousebuttonevent.html
+*/
+bool mouse_left_clicked(const std::vector<SDL_Event>& events) {
+    auto it = events.begin();
+    while(it != events.end()) {
+        const SDL_Event& event = *it;
+        if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            return true;
+        }
+        it++;
+    }
+    return false;
+} 
+
+/**
+ * Determine if the mouse right button has been pressed:
+ * Read here for more documentation: 
+ * https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlmousebuttonevent.html
+*/
+bool mouse_right_clicked(const std::vector<SDL_Event>& events) {
+    auto it = events.begin();
+    while(it != events.end()) {
+        const SDL_Event& event = *it;
+        if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT) {
+            return true;
+        }
+        it++;
+    }
+    return false;
+} 
+
+bool window_resized(const std::vector<SDL_Event>& events) {
+    for(int i = 0; i < events.size(); i++) {
+        SDL_Event event = events[i];
+        if(event.type == SDL_WINDOWEVENT &&
+            event.window.event == SDL_WINDOWEVENT_RESIZED) {
+            return true;
+        }
+    }
+    return false;
+} 
+
+void translate_position_to_viewport(int& x, int& y, RectT<int> viewport, RectT<int> full_window) {
+    double x_proc = (x - full_window.x) / (double)full_window.w;
+    double y_proc = (y - full_window.y) / (double)full_window.h;
+    x = x_proc * viewport.w + viewport.x;
+    y = y_proc * viewport.h + viewport.y;
+}
+
+struct WindowSize {
+    int w;
+    int h;
+    SDL_Window *window = nullptr;
+    WindowSize() {}
+    WindowSize(SDL_Window *window_) {
+        window = window_;
+        update();
+    }
+    void update() {
+        vicmil::get_window_size(window, &w, &h);
     }
 };
 }

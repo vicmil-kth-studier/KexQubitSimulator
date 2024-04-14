@@ -1,13 +1,23 @@
 #include "L5_widget.h"
 
 namespace vicmil {
+vicmil::WidgetManager::MouseInput get_mouse_input(vicmil::SDLUserInputRef user_input) {
+    vicmil::WidgetManager::MouseInput mouse_input = vicmil::WidgetManager::MouseInput();
+    mouse_input.was_clicked = mouse_left_clicked(user_input.get_recent_events());
+    mouse_input.x = user_input.get_mouse_state().x();
+    mouse_input.y = user_input.get_mouse_state().y();
+    return mouse_input;
+}
+
 namespace general_app_setup {
 class App {
 public:
     vicmil::GPUSetup setup;
     vicmil::SDLUserInputManager user_input_manager;
-    vicmil::__layout__::WidgetManager widget_manager;
-    vicmil::__layout__::WindowLayout window_layout = vicmil::__layout__::WindowLayout();
+    vicmil::SDLUserInputRef user_input;
+    vicmil::WindowSize window_size;
+    vicmil::WidgetManager widget_manager = vicmil::WidgetManager();
+    vicmil::LayoutRectManager window_layout = vicmil::LayoutRectManager();
 
     std::vector<vicmil::general_gpu_setup::Triangle> triangles = {};
     void draw_add(std::vector<vicmil::general_gpu_setup::Triangle> new_triangles) {
@@ -22,26 +32,34 @@ public:
         setup.show_on_screen();
     }
     // One some systems, the viewport may not always be the entire screen. This function can account for that
-    void translate_position_to_viewport(int& x, int& y) {
-        int w;
-        int h;
-        vicmil::get_window_size(setup.window_renderer.window, &w, &h);
-        vicmil::translate_position_to_viewport(x, y, 
-            window_layout.get_entire_window_reference().get_position(), 
-            RectT<int>(0, 0, w, h)
+    void translate_position_to_viewport(int& mouse_x, int& mouse_y) {
+        vicmil::translate_position_to_viewport(
+            mouse_x, 
+            mouse_y, 
+            window_layout.entire_screen_rect.get_position(), 
+            RectT<int>(0, 0, 
+                window_size.w, 
+                window_size.h
+            )
         );
     }
     void update() {
         user_input_manager.fetch_events_and_update();
-        auto mouse_ = vicmil::get_mouse_input(user_input_manager.get_reference());
+        window_size.update();
+        auto mouse_ = vicmil::get_mouse_input(user_input);
         #ifndef __EMSCRIPTEN__
-        const std::vector<SDL_Event>& events = user_input_manager.get_reference().get_recent_events();
+        const std::vector<SDL_Event>& events = user_input.get_recent_events();
         if(vicmil::window_resized(events)) {
-            int w;
-            int h;
-            vicmil::get_window_size(setup.window_renderer.window, &w, &h);
-            glViewport(0,0,(GLsizei)w,(GLsizei)h);
-            window_layout.set_size(w, h);
+            glViewport(
+                0,
+                0,
+                (GLsizei)window_size.w,
+                (GLsizei)window_size.h
+            );
+            window_layout.set_screen_size(
+                window_size.w, 
+                window_size.h
+            );
         }
         #else
             translate_position_to_viewport(mouse_.x, mouse_.y);
@@ -50,13 +68,15 @@ public:
     }
     void init() {
         setup = vicmil::general_gpu_setup::create_gpu_setup();
-        user_input_manager = vicmil::SDLUserInputManager::create_user_input_manager();
-        widget_manager = vicmil::__layout__::WidgetManager();
-        window_layout.set_size(1024, 1024);
+        user_input_manager = vicmil::SDLUserInputManager();
+        user_input = user_input_manager.get_reference();
+        widget_manager = vicmil::WidgetManager();
+        window_layout.set_screen_size(1024, 1024);
         setup.window_renderer.set_to_current_window();
+        window_size = vicmil::WindowSize(setup.window_renderer.window);
     }
-    vicmil::__layout__::LayoutRectReference get_layout_reference() {
-        return window_layout.get_entire_window_reference();
+    vicmil::LayoutRect get_layout_reference() {
+        return window_layout.entire_screen_rect;
     }
     vicmil::SDLUserInputRef get_user_input_reference() {
         return user_input_manager.get_reference();
@@ -64,11 +84,9 @@ public:
     vicmil::Rect get_opengl_position(vicmil::RectT<int> pixel_position) {
         return vicmil::get_opengl_position(pixel_position, get_layout_reference().get_position());
     }
-    vicmil::__layout__::Widget create_widget(vicmil::__layout__::LayoutRectReference layout_element) {
-        vicmil::__layout__::Widget new_widget = vicmil::__layout__::Widget();
-        new_widget.set_layout_element(layout_element);
-        widget_manager.add_widget(new_widget);
-        return new_widget;
+    vicmil::Widget create_widget(vicmil::LayoutRect layout_element) {
+        vicmil::__layout__::WidgetRect widget_rect = vicmil::__layout__::WidgetRect(widget_manager, layout_element);
+        return widget_rect.widget();
     }
 };
 }

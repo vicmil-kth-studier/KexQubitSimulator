@@ -5,6 +5,6 @@
 
 int main() {
     std::cout << "Starting!" << std::endl;
-    vicmil::TestClass::run_all_tests({".", "!L1_user"});
+    vicmil::TestClass::run_all_tests({""});
     std::cout << "Finished!" << std::endl;
 }

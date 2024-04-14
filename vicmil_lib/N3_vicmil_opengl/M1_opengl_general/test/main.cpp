@@ -4,6 +4,6 @@
 
 int main() {
     std::cout << "Starting!" << std::endl;
-    vicmil::TestClass::run_all_tests({"."});
+    vicmil::TestClass::run_all_tests({""});
     std::cout << "Finished!" << std::endl;
 }

@@ -6,41 +6,61 @@
 bool init_called = false;
 vicmil::general_app_setup::App app = vicmil::general_app_setup::App();
 
-vicmil::__layout__::Widget dropdown_widget = vicmil::__layout__::Widget();
-vicmil::__layout__::Anchor dropdown_anchor = vicmil::__layout__::Anchor();
+vicmil::LayoutRect top_button;
+vicmil::LayoutRect top_button_copy;
+vicmil::Widget top_button_widget;
 
-void setup_anchor() {
-    dropdown_anchor.set_layout_element(dropdown_widget.get_layout_element());
-    dropdown_anchor.set_anchor_alignment(vicmil::RectAlignment::BOTTOM_align_LEFT);
-    dropdown_anchor.get_anchor_element().get_properties().height.max_size = 100;
-    dropdown_anchor.get_anchor_element().get_properties().width.max_size = 100;
-    dropdown_anchor.update();
+vicmil::LayoutRect dropdown;
+
+void setup_top_button() {
+    vicmil::__layout__::SizeSplit size_split(app.get_layout_reference());
+    size_split.set_split_horizontal();
+    size_split.push_back(10, 10); // Add some spacing
+    top_button = size_split.push_back(50, 30);
+    vicmil::__layout__::Copy copy_ = vicmil::__layout__::Copy(top_button);
+    top_button_copy = copy_.create_copy();
+
+    top_button_widget = app.create_widget(copy_.create_copy());
+}
+void setup_dropdown() {
+    vicmil::__layout__::AlignRect dropdown_align = vicmil::__layout__::AlignRect(
+        top_button_copy,
+        vicmil::RectAlignment::BOTTOM_align_LEFT
+    );
+    dropdown_align.set_size(200, 400);
+    dropdown = dropdown_align.get_aligned_layout();
 }
 
 void render() {
     vicmil::clear_screen();
 
+    top_button.lock().update_element->update();
+
+    PrintExpr(app.get_layout_reference().get_position().to_string());
+    PrintExpr(top_button_widget.get_position().to_string());
+    PrintExpr(top_button_widget.expired());
     // Draw button
     glm::vec4 color = glm::vec4(0.0, 1.0, 0.0, 1.0);
-    if(dropdown_widget.is_selected()) {
+    if(top_button_widget.is_selected()) {
         color = glm::vec4(1.0, 0.6, 0, 1.0);
     }
-    if(dropdown_widget.is_last_clicked_widget()) {
+    if(top_button_widget.is_last_clicked_widget()) {
         color = glm::vec4(1.0, 0.0, 0.0, 1.0);
     }
-    vicmil::Rect position = app.get_opengl_position(dropdown_widget.get_position());
+    vicmil::Rect position = app.get_opengl_position(top_button.get_position());
     app.draw_add(vicmil::general_gpu_setup::triangles_from_2d_color_rect(position, color, 0.01));
 
-    if(!dropdown_widget.is_last_clicked_widget()) {
-        // Remove anchor
-        dropdown_anchor = vicmil::__layout__::Anchor();
+    if(!top_button_widget.is_last_clicked_widget()) {
+        dropdown = vicmil::LayoutRect();
     }
-    if(dropdown_widget.was_clicked()) {
-        setup_anchor();
+    if(top_button_widget.was_clicked()) {
+        setup_dropdown();
     }
 
-    position = app.get_opengl_position(dropdown_anchor.get_position());
-    app.draw_add(vicmil::general_gpu_setup::triangles_from_2d_color_rect(position, glm::vec4(0.1, 0.2, 0.9, 1.0), 0.02));
+    if(!dropdown.expired()) {
+        position = app.get_opengl_position(dropdown.get_position());
+        app.draw_add(vicmil::general_gpu_setup::triangles_from_2d_color_rect(position, glm::vec4(0.1, 0.2, 0.9, 1.0), 0.02));
+    }
 
     // Display on screen
     app.draw();
@@ -53,25 +73,7 @@ void init() {
     app.init();
 
     // Create button
-    Print("Create Top bar");
-    app.get_layout_reference().get_properties().split_horizontal = false;
-    vicmil::__layout__::LayoutRectReference top_bar = app.get_layout_reference().create_child();
-    top_bar.get_properties().height.max_size = 30;
-    top_bar.get_properties().split_horizontal = true;
-
-    // Create space element
-    top_bar.create_child().get_properties().width.max_size = 30;
-
-    Print("Create Button");
-    vicmil::__layout__::LayoutRectReference dropdown_button = top_bar.create_child();
-    dropdown_button.get_properties().width.max_size = 60;
-    
-    Print("Create Widget");
-    dropdown_widget = app.create_widget(dropdown_button);
-    setup_anchor();
-
-    Print("Update");
-    app.get_layout_reference().update();
+    setup_top_button();
 }
 
 void update(){
@@ -80,9 +82,6 @@ void update(){
         init();
     }
     update_window_layout_size(app.window_layout); // Handle window layout size update from emscripten if enabled
-    //PrintExpr(app.window_layout.get_entire_window_reference().get_position().to_string());
-    //Print("x: " << app.get_user_input_reference().get_mouse_state().x() << 
-    //    "  y: " << app.get_user_input_reference().get_mouse_state().y());
     app.update();
 
     render();

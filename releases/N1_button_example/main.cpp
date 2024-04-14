@@ -1,17 +1,17 @@
 #define USE_DEBUG
-#define DEBUG_KEYWORDS "!vicmil_lib,/source,main(),init()" 
+#define DEBUG_KEYWORDS ".,!main.cpp" 
 #include "../../vicmil_lib/vicmil_lib.h"
 
 bool init_called = false;
 vicmil::general_app_setup::App app = vicmil::general_app_setup::App();
-vicmil::__layout__::Widget button_widget;
+vicmil::Widget button_widget;
 
 void render() {
     vicmil::clear_screen();
 
     // Draw button
     glm::vec4 color = glm::vec4(0.0, 1.0, 0.0, 1.0);
-    if(button_widget.is_last_clicked_widget()) {
+    if(button_widget.lock().is_last_clicked_widget) {
         color = glm::vec4(1.0, 0.0, 0.0, 1.0);
     }
     vicmil::Rect position = app.get_opengl_position(button_widget.get_position());
@@ -28,9 +28,10 @@ void init() {
     app.init();
 
     // Create button
-    vicmil::__layout__::LayoutRectReference button_element = 
-        vicmil::__layout__::make_element_in_middle_from_weight(app.get_layout_reference(), 1, 1, 1, 1);
-    button_widget = app.create_widget(button_element);
+    auto split = vicmil::__layout__::PropSplit(app.get_layout_reference());
+    split.set_split_horizontal();
+    split.push_back(0.4);
+    button_widget = app.create_widget(split.push_back(0.2));
 }
 
 void update(){
@@ -39,9 +40,9 @@ void update(){
         init();
     }
     update_window_layout_size(app.window_layout); // Handle window layout size update from emscripten if enabled
-    PrintExpr(app.window_layout.get_entire_window_reference().get_position().to_string());
-    Print("x: " << app.get_user_input_reference().get_mouse_state().x() << 
-        "  y: " << app.get_user_input_reference().get_mouse_state().y());
+    //PrintExpr(app.window_layout.entire_screen_rect.get_position().to_string());
+    //Print("x: " << app.get_user_input_reference().get_mouse_state().x() << 
+    //    "  y: " << app.get_user_input_reference().get_mouse_state().y());
     app.update();
 
     render();

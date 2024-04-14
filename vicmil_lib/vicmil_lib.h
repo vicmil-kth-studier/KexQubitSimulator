@@ -5,8 +5,8 @@
 #include "N3_vicmil_opengl/vicmil_opengl.h"
 #endif
 
-void update_window_layout_size(vicmil::__layout__::WindowLayout& layout) {
+void update_window_layout_size(vicmil::LayoutRectManager& layout) {
     #ifdef __EMSCRIPTEN__
-    layout.set_size(vicmil::browser::window_width, vicmil::browser::window_height);
+    layout.set_screen_size(vicmil::browser::window_width, vicmil::browser::window_height);
     #endif
 }
