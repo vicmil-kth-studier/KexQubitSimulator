@@ -88,6 +88,19 @@ public:
         vicmil::__layout__::WidgetRect widget_rect = vicmil::__layout__::WidgetRect(widget_manager, layout_element);
         return widget_rect.widget();
     }
+    void visualize_widgets() {
+        auto it = widget_manager.widgets.begin();
+        int color_index = 0;
+        while(it != widget_manager.widgets.end()) {
+            vicmil::ColorRGB888 color_ = vicmil::ColorRGB888(color_index);
+            glm::vec4 color = glm::vec4({color_.r/255.0, color_.g/255.0, color_.b/255.0, 1.0});
+            color_index += 1;
+            vicmil::Rect position = get_opengl_position(it.lock().position);
+            double depth = it.lock().depth;
+            draw_add(vicmil::general_gpu_setup::triangles_from_2d_color_rect(position, color, depth));
+            it.operator++();
+        }
+    }
 };
 }
 }

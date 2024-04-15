@@ -88,20 +88,22 @@ void update(){
 };
 
 
+void update_() {
+    #ifdef update
+    update();
+    #endif
+}
 // Handle emscripten
 void native_app() {
     while(true) {
         update();
     }
 }
-void emscripten_update() {
-    update();
-}
 int main(int argc, char *argv[]) {
     Debug("Main!");
     #ifdef __EMSCRIPTEN__
         std::cout << "Emscripten!" << std::endl;
-        emscripten_set_main_loop(emscripten_update, 0, 1);
+        emscripten_set_main_loop(update, 0, 1);
     #else
         native_app();
     #endif
