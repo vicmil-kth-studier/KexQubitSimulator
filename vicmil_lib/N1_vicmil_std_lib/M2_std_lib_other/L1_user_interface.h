@@ -250,94 +250,186 @@ void TEST_LayoutRectManager() {
 AddTest(TEST_LayoutRectManager);
 
 namespace __layout__ {
-struct _Copy: public _LayoutRect::Update {
-    LayoutRect layout = LayoutRect(); // The layout that should not be modified
-    std::vector<LayoutRect> copies = {};
-    void update() override {
-        const RectT<int> layout_pos = layout.get_position();
-        for(int i = 0; i < copies.size(); i++) {
-            copies[i].set_position(layout_pos);
-        }
-    }
-    void remove() override {
-        for(int i = 0; i < copies.size(); i++) {
-            copies[i].remove();
-        }
-    }
-    ~_Copy() {
-        remove();
-    }
-};
 /**
- * Create multiple copies of LayoutRect that will sync with the original layouts position
- * Great for having multiple update elements on a single layout element
-*/
-struct Copy {
-    std::shared_ptr<_Copy> _ptr = std::make_shared<_Copy>();
-    Copy() {}
-    Copy(LayoutRect layout) {
-        _ptr->layout = layout;
-        _ptr->layout.set_update_element(_ptr);
-    }
-    LayoutRect create_copy() {
-        _ptr->copies.push_back(_ptr->layout.create_new());
-        update();
-        return _ptr->copies.back();
-    }
-    void update() {
-        _ptr->update();
-    }
-};
-
-
-struct _WidgetRect: public _LayoutRect::Update {
-    LayoutRect layout = LayoutRect();
-    Widget widget = Widget();
-    void update() override {
-        widget.lock().position = layout.get_position();
-    }
-    void remove() override {
-        layout.remove();
-        widget.remove();
-    }
-    ~_WidgetRect() {
-        remove();
-    }
-};
-/**
- * Automatically update a widgets position as the LayoutRect changes position
+ * Automatically update a widgets position as the LayoutRect changes position(once update is called)
 */
 struct WidgetRect {
-    std::shared_ptr<_WidgetRect> _ptr = std::make_shared<_WidgetRect>();
+    LayoutRect layout = LayoutRect();
+    Widget widget = Widget();
     WidgetRect() {}
-    WidgetRect(WidgetManager& widget_manager, LayoutRect rect) {
-        _ptr->widget = widget_manager.create_widget();
-        _ptr->layout = rect;
-        _ptr->layout.set_update_element(_ptr);
-        _ptr->update();
+    WidgetRect(Widget& other_widget, LayoutRect rect) {
+        widget = other_widget.create_widget();
+        layout = rect;
     }
-    WidgetRect(Widget& parent_widget, LayoutRect rect) {
-        _ptr->widget = parent_widget.create_widget();
-        _ptr->layout = rect;
-        _ptr->layout.set_update_element(_ptr);
-        _ptr->update();
+    void update() {
+        if(widget.expired()) {
+            return;
+        }
+        widget.lock().position = layout.get_position();
     }
     bool was_clicked() {
-        return _ptr->widget.lock().was_clicked;
+        if(widget.expired()) {
+            return false;
+        }
+        return widget.lock().was_clicked;
     }
     bool is_selected() {
-        return _ptr->widget.lock().is_selected;
+        if(widget.expired()) {
+            return false;
+        }
+        return widget.lock().is_selected;
     }
     bool is_last_clicked_widget() {
-        return _ptr->widget.lock().is_last_clicked_widget;
+        if(widget.expired()) {
+            return false;
+        }
+        return widget.lock().is_last_clicked_widget;
     }
     Widget widget() {
-        return _ptr->widget;
+        return widget;
+    }
+    ~WidgetRect() {
+        widget.remove();
     }
 };
 
+struct SubLayouts: _LayoutRect::Update {
+    struct DATA {
+        Widget hidden_widget; // Hidden widget can be used to create new widgets(but is not used itself)
+        WidgetRect widget = WidgetRect();
+        LayoutRect layout = LayoutRect();
+        std::vector<std::shared_ptr<SubLayouts>> sublayouts = std::vector<std::shared_ptr<SubLayouts>>();
+        std::shared_ptr<_LayoutRect::Update> update_element = std::make_shared<_LayoutRect::Update>(_LayoutRect::Update());
+    };
+    std::shared_ptr<DATA> data; // Share data between same class instances
+    
+    int sublayout_count() {
+        return data->sublayouts.size();
+    }
+    void set_sublayout_count(int count) {
+        while(sublayout_count() > count) {
+            data->sublayouts.back()->remove();
+            data->sublayouts.pop_back();
+        }
+        while(sublayout_count() < count) {
+            data->sublayouts.push_back(std::make_shared<SubLayouts>());
+            LayoutRect new_layout = data->layout.create_new();
+            new_layout.set_update_element(data->sublayouts.back());
+            data->sublayouts.back()->data->hidden_widget = data->hidden_widget;
+        }
+    }
+    std::shared_ptr<SubLayouts> get_sublayout(int index) {
+        return (*sublayouts)[index];
+    }
+    void enable_widget(bool enable = true) {
+        if(enable) {
+            widget = std::make_shared<WidgetRect>(hidden_widget, layout);
+        }
+        else {
+            widget = std::make_shared<WidgetRect>();
+        }
+    }
+    static void transfer(std::shared_ptr<SubLayouts> new_, std::shared_ptr<SubLayouts> old_) {
+        new_->hidden_widget = old_->hidden_widget;
+        new_->layout = old_->layout;
 
-struct _PropSplitElement {
+        // Transfer sublayouts
+        new_->sublayouts = old_->sublayouts;
+        old_->sublayouts = std::make_shared<std::vector<std::shared_ptr<SubLayouts>>>();
+
+        // Set this widget as the updating widget
+        new_->layout.set_update_element(new_);
+    }
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        update_element->update_screen_size();
+    }; 
+    void update() override{
+        update_element->update();
+        widget->update();
+    }; 
+    void remove() override{
+        update_element->remove();
+    }; 
+};
+
+/**
+ * Have a set of rectangles aligned with the original rectangle
+*/
+struct _AlignRectangles: _LayoutRect::Update {
+    std::shared_ptr<SubLayouts> sublayouts = std::make_shared<SubLayouts>();
+    std::shared_ptr<std::vector<vicmil::RectAlignment>> alignment;
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        update();
+    }; 
+    void update() override{ 
+        // Iterate through sublayouts and align them accordingly
+        RectT<int> layout_pos = sublayouts->layout.get_position();
+        for(int i = 0; i < sublayouts->sublayouts->size(); i++) {
+            RectT<int> new_pos = (*sublayouts->sublayouts)[i]->layout.get_position();
+            vicmil::align_rect(new_pos, layout_pos, (*alignment)[i]);
+            (*sublayouts->sublayouts)[i]->layout.set_position(new_pos);
+        }
+    }; 
+    void remove() override{
+        // Delete sublayouts
+        sublayouts->remove();
+    }; 
+};
+struct AlignRectangles {
+    std::shared_ptr<_AlignRectangles> _ptr = std::make_shared<_AlignRectangles>();
+    AlignRectangles() {}
+    AlignRectangles(LayoutRect layout_, Widget hidden_widget_) {
+        _ptr->sublayouts->hidden_widget = hidden_widget_;
+        layout_.set_update_element(_ptr->sublayouts);
+    }
+};
+
+struct DivideRectangleBySize: _LayoutRect::Update {
+    struct _SplitElement {
+        int height = 0;
+        int width = 0;
+    };
+    std::shared_ptr<SubLayouts> sublayouts = std::make_shared<SubLayouts>();
+    std::shared_ptr<std::vector<_SplitElement>> split_elements;
+    bool split_horizontal = true;
+    DivideRectangleBySize() {}
+    DivideRectangleBySize(LayoutRect layout_, Widget hidden_widget_) {
+        
+    }
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        // Update stuff!
+    }; 
+    void update() override{ 
+        // Update stuff!
+    }; 
+    void remove() override{
+        // Do nothing
+    }; 
+};
+
+struct DivideRectangleByProportion: _LayoutRect::Update {
+    struct _SplitElement {
+        float prop;
+    };
+    std::shared_ptr<SubLayouts> sublayouts = std::make_shared<SubLayouts>();
+    std::shared_ptr<std::vector<_SplitElement>> split_elements;
+    bool split_horizontal = true;
+    DivideRectangleByProportion() {}
+    DivideRectangleByProportion(LayoutRect layout_, Widget hidden_widget_) {
+
+    }
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        // Update stuff!
+    }; 
+    void update() override{ 
+        // Update stuff!
+    }; 
+    void remove() override{
+        // Do nothing
+    }; 
+};
+
+/*struct _PropSplitElement {
     LayoutRect layout;
     float prop;
 };
@@ -371,12 +463,12 @@ struct _PropSplit: public _LayoutRect::Update {
     ~_PropSplit() {
         remove();
     }
-};
+};*/
 /**
  * Split the screen based on proportion
  * You can for example create sub-elements that will take up 10% of the original LayoutRect
 */
-struct PropSplit {
+/*struct PropSplit {
     std::shared_ptr<_PropSplit> _ptr = std::make_shared<_PropSplit>();
     PropSplit() {}
     PropSplit(LayoutRect rect) {
@@ -439,12 +531,12 @@ struct _SizeSplit: public _LayoutRect::Update {
     ~_SizeSplit() {
         remove();
     }
-};
+};*/
 /**
  * Split the screen based on size
  * You can for example create sub-elements that will take up 100 pixels each inside the original LayoutRect
 */
-struct SizeSplit {
+/*struct SizeSplit {
     std::shared_ptr<_SizeSplit> _ptr = std::make_shared<_SizeSplit>();
     SizeSplit() {}
     SizeSplit(LayoutRect rect) {
@@ -497,11 +589,11 @@ struct _AlignRect: public _LayoutRect::Update {
     ~_AlignRect() {
         remove();
     }
-};
+};*/
 /**
  * Align a rectangle according to other rectangle
 */
-struct AlignRect {
+/*struct AlignRect {
     std::shared_ptr<_AlignRect> _ptr = std::make_shared<_AlignRect>();
     AlignRect() {}
     AlignRect(LayoutRect layout, vicmil::RectAlignment alignment) {
@@ -554,12 +646,12 @@ struct _LayoutRectWidget {
         sub_layouts_layout.remove();
         widget.remove();
     }
-};
+};*/
 /**
  * This is the result of all features in __layout__ combined!
  * It can do a lot! No need to use lesser classes
 */
-struct LayoutRectWidget {
+/*struct LayoutRectWidget {
     std::shared_ptr<std::vector<LayoutRectWidget>> sub_layouts = std::make_shared<std::vector<LayoutRectWidget>>();
     std::shared_ptr<_LayoutRectWidget> _ptr = std::make_shared<_LayoutRectWidget>();
     LayoutRectWidget() {}
@@ -677,7 +769,8 @@ struct LayoutRectWidget {
         }
         return {};
     }
-};
+};*/
+}
 
 /**
  * Here we put layout elements that build on __layout__ elements
