@@ -164,7 +164,9 @@ namespace vicmil {
         BOTTOM_align_MIDDLE_W,
         BOTTOM_align_RIGHT,
 
-        MIDDLE
+        MIDDLE,
+        NO_ALIGNMENT,
+        COPY_POSITION
     };
     void align_rect(RectT<int>& rect, const RectT<int> stationaty_rect, RectAlignment alignment) {
         if(alignment == RectAlignment::LEFT_align_TOP) {
@@ -199,6 +201,12 @@ namespace vicmil {
         else if(alignment == RectAlignment::BOTTOM_align_RIGHT) {
             align_rect_edge_x(rect, stationaty_rect, true, false);
             align_rect_edge_y(rect, stationaty_rect, false, false);
+        }
+        else if(alignment == RectAlignment::NO_ALIGNMENT) {
+            // Do nothing
+        }
+        else if(alignment == RectAlignment::COPY_POSITION) {
+            rect = stationaty_rect;
         }
         else {
             ThrowNotImplemented();
