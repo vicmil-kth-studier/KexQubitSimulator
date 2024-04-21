@@ -293,9 +293,104 @@ struct WidgetRect {
     }
 };
 
-struct SubLayouts: _LayoutRect::Update {
+// The subwidget data element is the one being manipulated, all other elements can't see seach other
+struct Widgetdata: _LayoutRect::Update {
+    WidgetRect widget = WidgetRect();
+    LayoutRect layout = LayoutRect();
+    std::vector<std::shared_ptr<Widgetdata>> sublayouts = std::vector<std::shared_ptr<Widgetdata>>();
+
+    // [Optional] An element that will be automatically updated if the element is updated
+    struct Update {
+        virtual void update_screen_size(){}; // (Will automatically be done to all elements, no need to call others)
+        virtual void update(){}; 
+        virtual void remove(){}; 
+    };
+    std::shared_ptr<_LayoutRect::Update> update_element = std::make_shared<_LayoutRect::Update>(Widgetdata::Update());
+};
+
+struct _AlignRectangles: Widgetdata::Update {
+    std::shared_ptr<std::vector<vicmil::RectAlignment>> alignment = std::make_shared<std::vector<vicmil::RectAlignment>>();
+    std::shared_ptr<Widgetdata> widget_data = std::make_shared<Widgetdata>();
+
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        update();
+    }; 
+    void update() override{ 
+        // Iterate through sublayouts and align them accordingly
+        RectT<int> layout_pos = sublayouts->data->layout.get_position();
+        for(int i = 0; i < sublayouts->sublayout_count(); i++) {
+            RectT<int> new_pos = sublayouts->get_sublayout(i)->get_position();
+            vicmil::align_rect(new_pos, layout_pos, (*alignment)[i]);
+            sublayouts->get_sublayout(i)->data->layout.set_position(new_pos);
+        }
+    }; 
+    void remove() override{
+        // Delete sublayouts
+        sublayouts->remove();
+    }; 
+    AlignRectangles(LayoutRect layout_, Widget hidden_widget_) {
+        sublayouts->data->hidden_widget = hidden_widget_;
+        layout_.set_update_element(sublayouts);
+    }
+};
+struct AlignRectangles {
+    std::shared_ptr<_AlignRectangles> align_rectangles = std::make_shared<_AlignRectangles>()
+}
+
+struct DivideRectangleBySize: Widgetdata::Update {
+    struct _SplitElement {
+        int height = 0;
+        int width = 0;
+    };
+    std::shared_ptr<SubLayouts> sublayouts = std::make_shared<SubLayouts>();
+    std::shared_ptr<std::vector<_SplitElement>> split_elements;
+    bool split_horizontal = true;
+    DivideRectangleBySize() {}
+    DivideRectangleBySize(LayoutRect layout_, Widget hidden_widget_) {
+        
+    }
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        // Update stuff!
+    }; 
+    void update() override{ 
+        // Update stuff!
+    }; 
+    void remove() override{
+        // Do nothing
+    }; 
+};
+
+struct DivideRectangleByProportion: Widgetdata::Update {
+    struct _SplitElement {
+        float prop;
+    };
+    std::shared_ptr<SubLayouts> sublayouts = std::make_shared<SubLayouts>();
+    std::shared_ptr<std::vector<_SplitElement>> split_elements;
+    bool split_horizontal = true;
+    DivideRectangleByProportion() {}
+    DivideRectangleByProportion(LayoutRect layout_, Widget hidden_widget_) {
+
+    }
+    void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
+        // Update stuff!
+    }; 
+    void update() override{ 
+        // Update stuff!
+    }; 
+    void remove() override{
+        // Do nothing
+    }; 
+};
+
+
+
+
+
+
+
+
+/*struct SubLayouts: _LayoutRect::Update {
     struct DATA {
-        Widget hidden_widget; // Hidden widget can be used to create new widgets(but is not used itself)
         WidgetRect widget = WidgetRect();
         LayoutRect layout = LayoutRect();
         std::vector<std::shared_ptr<SubLayouts>> sublayouts = std::vector<std::shared_ptr<SubLayouts>>();
@@ -319,71 +414,77 @@ struct SubLayouts: _LayoutRect::Update {
         }
     }
     std::shared_ptr<SubLayouts> get_sublayout(int index) {
-        return (*sublayouts)[index];
+        return data->sublayouts[index];
+    }
+    std::shared_ptr<DATA> get_sublayout_data(int index) {
+        return data->sublayouts[index]->data;
     }
     void enable_widget(bool enable = true) {
         if(enable) {
-            widget = std::make_shared<WidgetRect>(hidden_widget, layout);
+            data->widget = WidgetRect(data->hidden_widget, data->layout);
         }
         else {
-            widget = std::make_shared<WidgetRect>();
+            data->widget = WidgetRect();
         }
     }
+    RectT<int> get_position() {
+        return data->layout.get_position();
+    }
+    void set_position(RectT<int> new_pos) {
+        return data->layout.set_position(new_pos);
+    }
     static void transfer(std::shared_ptr<SubLayouts> new_, std::shared_ptr<SubLayouts> old_) {
-        new_->hidden_widget = old_->hidden_widget;
-        new_->layout = old_->layout;
+        new_->data->hidden_widget = old_->data->hidden_widget;
+        new_->data->layout = old_->data->layout;
 
         // Transfer sublayouts
-        new_->sublayouts = old_->sublayouts;
-        old_->sublayouts = std::make_shared<std::vector<std::shared_ptr<SubLayouts>>>();
+        new_->data->sublayouts = old_->data->sublayouts;
+        old_->data->sublayouts = std::vector<std::shared_ptr<SubLayouts>>();
 
         // Set this widget as the updating widget
-        new_->layout.set_update_element(new_);
+        new_->data->layout.set_update_element(new_);
     }
     void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
-        update_element->update_screen_size();
+        data->update_element->update_screen_size();
     }; 
     void update() override{
-        update_element->update();
-        widget->update();
+        data->update_element->update();
+        data->widget.update();
     }; 
     void remove() override{
-        update_element->remove();
+        data->update_element->remove();
     }; 
-};
+};*/
 
 /**
  * Have a set of rectangles aligned with the original rectangle
 */
-struct _AlignRectangles: _LayoutRect::Update {
+/*struct AlignRectangles: _LayoutRect::Update {
+    std::shared_ptr<std::vector<vicmil::RectAlignment>> alignment = std::make_shared<std::vector<vicmil::RectAlignment>>();
     std::shared_ptr<SubLayouts> sublayouts = std::make_shared<SubLayouts>();
-    std::shared_ptr<std::vector<vicmil::RectAlignment>> alignment;
+
     void update_screen_size() override { // (Will automatically be done to all elements, no need to call others)
         update();
     }; 
     void update() override{ 
         // Iterate through sublayouts and align them accordingly
-        RectT<int> layout_pos = sublayouts->layout.get_position();
-        for(int i = 0; i < sublayouts->sublayouts->size(); i++) {
-            RectT<int> new_pos = (*sublayouts->sublayouts)[i]->layout.get_position();
+        RectT<int> layout_pos = sublayouts->data->layout.get_position();
+        for(int i = 0; i < sublayouts->sublayout_count(); i++) {
+            RectT<int> new_pos = sublayouts->get_sublayout(i)->get_position();
             vicmil::align_rect(new_pos, layout_pos, (*alignment)[i]);
-            (*sublayouts->sublayouts)[i]->layout.set_position(new_pos);
+            sublayouts->get_sublayout(i)->data->layout.set_position(new_pos);
         }
     }; 
     void remove() override{
         // Delete sublayouts
         sublayouts->remove();
     }; 
-};
-struct AlignRectangles {
-    std::shared_ptr<_AlignRectangles> _ptr = std::make_shared<_AlignRectangles>();
-    AlignRectangles() {}
     AlignRectangles(LayoutRect layout_, Widget hidden_widget_) {
-        _ptr->sublayouts->hidden_widget = hidden_widget_;
-        layout_.set_update_element(_ptr->sublayouts);
+        sublayouts->data->hidden_widget = hidden_widget_;
+        layout_.set_update_element(sublayouts);
     }
-};
-
+};*/
+/*
 struct DivideRectangleBySize: _LayoutRect::Update {
     struct _SplitElement {
         int height = 0;
@@ -406,7 +507,8 @@ struct DivideRectangleBySize: _LayoutRect::Update {
         // Do nothing
     }; 
 };
-
+*/
+/*
 struct DivideRectangleByProportion: _LayoutRect::Update {
     struct _SplitElement {
         float prop;
@@ -427,7 +529,12 @@ struct DivideRectangleByProportion: _LayoutRect::Update {
     void remove() override{
         // Do nothing
     }; 
-};
+};*/
+/*
+struct LayoutRectWidget {
+    std::shared_ptr<SubLayouts> sublayouts;
+
+};*/
 
 /*struct _PropSplitElement {
     LayoutRect layout;
@@ -651,7 +758,7 @@ struct _LayoutRectWidget {
  * This is the result of all features in __layout__ combined!
  * It can do a lot! No need to use lesser classes
 */
-/*struct LayoutRectWidget {
+struct LayoutRectWidget {
     std::shared_ptr<std::vector<LayoutRectWidget>> sub_layouts = std::make_shared<std::vector<LayoutRectWidget>>();
     std::shared_ptr<_LayoutRectWidget> _ptr = std::make_shared<_LayoutRectWidget>();
     LayoutRectWidget() {}
@@ -769,7 +876,7 @@ struct _LayoutRectWidget {
         }
         return {};
     }
-};*/
+};
 }
 
 /**

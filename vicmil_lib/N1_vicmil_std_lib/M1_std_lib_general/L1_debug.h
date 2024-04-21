@@ -202,7 +202,7 @@ namespace vicmil {
  * @arg v2: The second numerical value
  * @arg deviance: the deviance allowed between v1 and v2
 */
-#define Assert(x)
+#define AssertEq(v1, v2, deviance)
 #endif 
 
 /**
